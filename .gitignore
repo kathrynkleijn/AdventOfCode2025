@@ -1,0 +1,4 @@
+# Hide input files
+
+/input_data/*
+*.pyc
