@@ -1,3 +1,7 @@
+## Day 1: Secret Entrance
+
+# Part 1
+
 test_data = """L68
 L30
 R48
@@ -69,3 +73,48 @@ with open("../input_data/01_Secret_Entrance.txt", "r", encoding="utf-8") as file
 rotation_list1 = parse_rotations(data)
 answer_1 = rotate(rotation_list1)
 print(answer_1)
+
+# Part 2
+
+
+def rotate_new_method(rotation_list, start_num=50, dial_max=99):
+    current = start_num
+    password = 0
+    for item in rotation_list:
+        old = current
+        current += item
+        if current < 0:
+            if abs(current) > (dial_max + 1):
+                password += 1
+                while abs(current + (dial_max + 1)) > (dial_max + 1):
+                    password += 1
+                    current = current + (dial_max + 1)
+            password += 1
+            if old == 0:
+                password = password - 1
+        elif current > (dial_max + 1):
+            password += 1
+            while current - (dial_max + 1) > (dial_max + 1):
+                password += 1
+                current = current - (dial_max + 1)
+        current = current % (dial_max + 1)
+        if current == 0:
+            password += 1
+    return password
+
+
+assert rotate_new_method(test_list) == 6
+assert rotate_new_method([1000]) == 10
+assert rotate_new_method([-50, 200]) == 3
+
+assert rotate_new_method([50]) == 1
+assert rotate_new_method([-50]) == 1
+assert rotate_new_method([-52]) == 1
+assert rotate_new_method([10]) == 0
+assert rotate_new_method([-90]) == 1
+assert rotate_new_method([-240]) == 2
+assert rotate_new_method([-250]) == 3
+
+
+answer_2 = rotate_new_method(rotation_list1)
+print(answer_2)
