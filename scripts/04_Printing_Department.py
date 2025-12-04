@@ -119,3 +119,98 @@ assert test_map.access_with_removal() == 43
 
 answer_map.reset_grid()
 print(answer_map.access_with_removal())
+
+
+# Alternative
+
+from collections import Counter
+
+
+class PaperMapNew:
+
+    def __init__(self, map, debug=False, debug_fine=False):
+        self.map = map
+        self.rows = self.map.split("\n")
+        self.grid = self.to_grid()
+        self.m = len(self.rows)
+        self.n = len(self.rows[0])
+        self.size = (self.m, self.n)
+        self.debug = debug
+        self.debug_fine = debug_fine
+
+    def __str__(self):
+        return "\n".join(row for row in self.rows)
+
+    def to_grid(self):
+        return [list(row) for row in self.rows]
+
+    def subgrid(self, i, j):
+        if i == 0 and 0 < j < self.m - 1:
+            return self.grid[i][j - 1 : j + 2] + self.grid[i + 1][j - 1 : j + 2]
+        elif i == 0 and j == self.m - 1:
+            return self.grid[i][j - 1 : j + 1] + self.grid[i + 1][j - 1 : j + 1]
+        elif j == 0 and 0 < i < self.n - 1:
+            return (
+                self.grid[i - 1][j : j + 2]
+                + self.grid[i][j : j + 2]
+                + self.grid[i + 1][j : j + 2]
+            )
+        elif j == 0 and i == self.n - 1:
+            return self.grid[i - 1][j : j + 2] + self.grid[i][j : j + 2]
+        elif i == 0 and j == 0:
+            return self.grid[i][j : j + 2] + self.grid[i + 1][j : j + 2]
+        elif i == self.n - 1 and 0 < j < self.m - 1:
+            return self.grid[i - 1][j - 1 : j + 2] + self.grid[i][j - 1 : j + 2]
+        elif j == self.m - 1 and 0 < i < self.n - 1:
+            return (
+                self.grid[i - 1][j - 1 : j + 1]
+                + self.grid[i][j - 1 : j + 1]
+                + self.grid[i + 1][j - 1 : j + 1]
+            )
+        elif i == self.n - 1 and j == self.m - 1:
+            return self.grid[i - 1][j - 1 : j + 1] + self.grid[i][j - 1 : j + 1]
+        else:
+            return (
+                self.grid[i - 1][j - 1 : j + 2]
+                + self.grid[i][j - 1 : j + 2]
+                + self.grid[i + 1][j - 1 : j + 2]
+            )
+
+    def access_search(self, removing=False):
+        accessible = 0
+        for i in range(self.m):
+            if "@" not in self.grid[i]:
+                continue
+            for j in range(self.n):
+                if self.grid[i][j] == "@":
+                    subgrid = self.subgrid(i, j)
+                    if self.debug:
+                        if (Counter(subgrid)["@"] + Counter(subgrid)["x"] - 1) < 4:
+                            self.grid[i][j] = "x"
+                            accessible += 1
+                    else:
+                        if Counter(subgrid)["@"] < 4:
+                            accessible += 1
+        if self.debug:
+            grid_repr = []
+            for row in self.grid:
+                grid_repr.append("".join(x for x in row))
+            print("\n".join(row for row in grid_repr))
+            print("\n")
+        return accessible
+
+    def access_with_removal(self):
+        accessible = 0
+        removed = 1
+        while removed > 0:
+            removed = self.access_search(removing=True)
+            accessible += removed
+        return accessible
+
+    def reset_grid(self):
+        self.grid = self.to_grid()
+
+
+test_map = PaperMapNew(test_data, debug=True)
+test_map.reset_grid()
+print(test_map.access_search())
