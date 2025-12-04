@@ -184,12 +184,13 @@ class PaperMapNew:
             for j in range(self.n):
                 if self.grid[i][j] == "@":
                     subgrid = self.subgrid(i, j)
-                    if self.debug:
-                        if (Counter(subgrid)["@"] + Counter(subgrid)["x"] - 1) < 4:
+                    if removing:
+                        if (Counter(subgrid)["@"] - 1) < 4:
                             self.grid[i][j] = "x"
                             accessible += 1
                     else:
-                        if Counter(subgrid)["@"] < 4:
+                        if (Counter(subgrid)["@"] + Counter(subgrid)["x"] - 1) < 4:
+                            self.grid[i][j] = "x"
                             accessible += 1
         if self.debug:
             grid_repr = []
@@ -211,6 +212,14 @@ class PaperMapNew:
         self.grid = self.to_grid()
 
 
-test_map = PaperMapNew(test_data, debug=True)
+test_map = PaperMapNew(test_data)
 test_map.reset_grid()
-print(test_map.access_search())
+assert test_map.access_search() == 13
+
+
+answer_map = PaperMapNew(input_data)
+answer_map.reset_grid()
+print(answer_map.access_search())
+
+answer_map.reset_grid()
+print(answer_map.access_with_removal())
