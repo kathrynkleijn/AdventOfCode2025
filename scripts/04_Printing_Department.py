@@ -58,6 +58,8 @@ class PaperMap:
             adjacent_roll = ["@", "x"]
         accessible = 0
         for i in range(self.m):
+            if "@" not in self.grid[i]:
+                continue
             for j in range(self.n):
                 inaccesible = False
                 adjacent = 0
@@ -99,7 +101,7 @@ class PaperMap:
 
 # Part 1
 
-test_map = PaperMap(test_data, debug=True)
+test_map = PaperMap(test_data)
 
 assert test_map.access_search() == 13
 
