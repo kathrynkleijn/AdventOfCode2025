@@ -39,40 +39,12 @@ def fresh_ids(ranges):
     for id_range in ranges:
         start = id_range.split("-")[0]
         stop = id_range.split("-")[1]
-        fresh.append([int(start), int(stop)])
+        fresh.append((int(start), int(stop)))
     return (id_range for id_range in sorted(fresh))
 
 
 test_ranges, test_ids = parse_data(test_data)
-assert [x for x in fresh_ids(test_ranges)] == [[3, 5], [10, 14], [12, 18], [16, 20]]
-
-
-# def sort_fresh_ids(ranges):
-#     fresh = []
-#     for id_range in fresh_ids(ranges):
-#         updated = False
-#         for num, fresh_range in enumerate(fresh):
-#             if (
-#                 fresh_range[0] <= id_range[0] <= fresh_range[1]
-#                 and id_range[1] > fresh_range[1]
-#             ):
-#                 fresh[num] = [fresh_range[0], id_range[1]]
-#                 updated = True
-#             elif (
-#                 id_range[0] < fresh_range[0]
-#                 and fresh_range[0] <= id_range[1] <= fresh_range[1]
-#             ):
-#                 fresh[num] = [id_range[0], fresh_range[1]]
-#                 updated = True
-#             elif id_range[0] < fresh_range[0] and id_range[1] > fresh_range[1]:
-#                 fresh[num] = id_range
-#                 updated = True
-#         if not updated:
-#             fresh.append(id_range)
-#     return (id_range for id_range in sorted(fresh))
-
-
-# assert [x for x in sort_fresh_ids(test_ranges)] == [[3, 5], [10, 20]]
+assert [x for x in fresh_ids(test_ranges)] == [(3, 5), (10, 14), (12, 18), (16, 20)]
 
 
 def is_it_fresh(id, fresh_range):
@@ -97,3 +69,50 @@ with open("../input_data/05_Cafeteria.txt", "r", encoding="utf-8") as file:
 
 answer_1 = count_fresh(input_data)
 print(answer_1)
+
+
+# Part 2
+
+
+def sort_fresh_ids(ranges):
+    fresh = []
+    for id_range in fresh_ids(ranges):
+        updated = False
+        for num, fresh_range in enumerate(fresh):
+            if (
+                fresh_range[0] <= id_range[0] <= fresh_range[1]
+                and id_range[1] >= fresh_range[1]
+            ):
+                fresh[num] = (fresh_range[0], id_range[1])
+                updated = True
+            elif (
+                id_range[0] <= fresh_range[0]
+                and fresh_range[0] <= id_range[1] <= fresh_range[1]
+            ):
+                fresh[num] = (id_range[0], fresh_range[1])
+                updated = True
+            elif id_range[0] < fresh_range[0] and id_range[1] > fresh_range[1]:
+                fresh[num] = id_range
+                updated = True
+            elif fresh_range[0] <= id_range[0] and id_range[1] <= fresh_range[1]:
+                updated = True
+        if not updated:
+            fresh.append(id_range)
+    return (id_range for id_range in sorted(set(fresh)))
+
+
+assert [x for x in sort_fresh_ids(test_ranges)] == [(3, 5), (10, 20)]
+
+
+def count_possible_fresh(data):
+    count = 0
+    ranges, ids = parse_data(data)
+    for fresh_range in sort_fresh_ids(ranges):
+        count += fresh_range[1] - fresh_range[0] + 1
+    return count
+
+
+assert count_possible_fresh(test_data) == 14
+
+answer_2 = count_possible_fresh(input_data)
+print(answer_2)
