@@ -173,6 +173,7 @@ class TachyonManifold:
             )
         return splitters
 
+    # if splitter is zeroed, splitters beneath might still be hit by something else
     def count_splits(self):
         first_row = self.start[0] + 1
         splitter_count = defaultdict(lambda: 1)
@@ -194,8 +195,6 @@ class TachyonManifold:
             print(splitter_count)
         top_splitter = splitter_dict[first_row][0]
         return splitter_count[(first_row, top_splitter)]
-
-    # if splitter is zeroed, splitters beneath might still be hit by something else
 
 
 test_manifold = TachyonManifold(test_data, debug=True)
@@ -230,15 +229,15 @@ assert test_manifold.splitters == [
     (14, 13),
 ]
 
-# assert test_manifold.count_splits() == 21
+assert test_manifold.count_splits() == 21
 
 
-test_manifold2 = TachyonManifold(test_data2, debug=True)
-print(test_manifold2.count_splits())
+# test_manifold2 = TachyonManifold(test_data2, debug=True)
+# print(test_manifold2.count_splits())
 
-test_manifold3 = TachyonManifold(test_data3, debug=True)
-print(test_manifold3.beam_step_through())
-print(test_manifold3.count_splits())
+# test_manifold3 = TachyonManifold(test_data3, debug=True)
+# print(test_manifold3.beam_step_through())
+# print(test_manifold3.count_splits())
 
 
 # with open("../input_data/07_Laboratories.txt", "r", encoding="utf-8") as file:
