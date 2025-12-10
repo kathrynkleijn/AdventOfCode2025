@@ -63,6 +63,21 @@ test_data3 = """..............................S..............................
 ......................^.^.^.^.^.^.^.^.^......................
 ............................................................."""
 
+test_data4 = """......S........
+...............
+......^........
+...............
+.....^.^.......
+...............
+....^...^......
+...............
+...^..^.^......
+...............
+..^.^.^.^......
+...............
+.^.^...^.......
+..............."""
+
 
 class TachyonManifold:
 
@@ -138,8 +153,9 @@ class TachyonManifold:
             for col in cols:
                 for row in reversed(range(first_row, key, 2)):
                     if col in splitter_dict[row]:
-                        splitter_count[(row, col)] += splitter_count[(key, col)] - 1
-                        splitter_count[(key, col)] = 0
+                        if splitter_count[(key, col)] != 0:
+                            splitter_count[(row, col)] += splitter_count[(key, col)] - 1
+                            splitter_count[(key, col)] = 0
                     elif col - 1 in splitter_dict[row]:
                         splitter_count[(row, col - 1)] += splitter_count[(key, col)]
                         break
@@ -187,11 +203,14 @@ assert test_manifold.splitters == [
 assert test_manifold.count_splits() == 21
 
 
-test_manifold2 = TachyonManifold(test_data2, debug=True)
+test_manifold2 = TachyonManifold(test_data2)
 assert test_manifold2.beam_step_through() == test_manifold2.count_splits()
 
-test_manifold3 = TachyonManifold(test_data3, debug=True)
+test_manifold3 = TachyonManifold(test_data3)
 assert test_manifold3.beam_step_through() == test_manifold3.count_splits()
+
+test_manifold4 = TachyonManifold(test_data4, debug=True)
+assert test_manifold4.beam_step_through() == test_manifold4.count_splits()
 
 
 with open("../input_data/07_Laboratories.txt", "r", encoding="utf-8") as file:
