@@ -1,6 +1,7 @@
 ## Day 7: Laboratories
 
-from collections import defaultdict
+from collections import defaultdict, Counter
+from math import factorial
 
 # Part 1
 
@@ -90,6 +91,7 @@ class TachyonManifold:
         self.size = (self.m, self.n)
         self.start = self.start_point()
         self.splitters = self.find_splitters()
+        self.splitter_dict = self.make_splitter_dict()
         self.debug = debug
 
     def __str__(self):
@@ -143,32 +145,35 @@ class TachyonManifold:
             )
         return splitters
 
-    def count_splits(self):
-        first_row = self.start[0] + 1
-        splitter_count = defaultdict(lambda: 1)
+    def make_splitter_dict(self):
         splitter_dict = defaultdict(list)
         for i in self.splitters[::-1]:
             splitter_dict[i[0]].append(i[1])
-        for key, cols in splitter_dict.items():
+        return splitter_dict
+
+    def count_splits(self):
+        first_row = self.start[0] + 1
+        splitter_count = defaultdict(lambda: 1)
+        for key, cols in self.splitter_dict.items():
             for col in cols:
                 for row in reversed(range(first_row, key, 2)):
-                    if col in splitter_dict[row]:
+                    if col in self.splitter_dict[row]:
                         if splitter_count[(key, col)] != 0:
                             splitter_count[(row, col)] += splitter_count[(key, col)] - 1
                             splitter_count[(key, col)] = 0
-                    elif col - 1 in splitter_dict[row]:
+                    elif col - 1 in self.splitter_dict[row]:
                         splitter_count[(row, col - 1)] += splitter_count[(key, col)]
                         break
-                    elif col + 1 in splitter_dict[row]:
+                    elif col + 1 in self.splitter_dict[row]:
                         splitter_count[(row, col + 1)] += splitter_count[(key, col)]
                         break
         if self.debug:
             print(splitter_count)
-        top_splitter = splitter_dict[first_row][0]
+        top_splitter = self.splitter_dict[first_row][0]
         return splitter_count[(first_row, top_splitter)]
 
 
-test_manifold = TachyonManifold(test_data, debug=True)
+test_manifold = TachyonManifold(test_data)
 print(test_manifold)
 
 assert test_manifold.start == (1, 7)
@@ -209,7 +214,7 @@ assert test_manifold2.beam_step_through() == test_manifold2.count_splits()
 test_manifold3 = TachyonManifold(test_data3)
 assert test_manifold3.beam_step_through() == test_manifold3.count_splits()
 
-test_manifold4 = TachyonManifold(test_data4, debug=True)
+test_manifold4 = TachyonManifold(test_data4)
 assert test_manifold4.beam_step_through() == test_manifold4.count_splits()
 
 
@@ -218,3 +223,62 @@ with open("../input_data/07_Laboratories.txt", "r", encoding="utf-8") as file:
 
 answer_manifold = TachyonManifold(input_data)
 print(answer_manifold.count_splits())
+
+
+# Part 2
+
+
+class QuantumTachyonManifold(TachyonManifold):
+
+    def __init__(self, map, debug=False):
+        self.map = map
+        self.rows = self.map.split("\n")
+        self.grid = self.to_grid()
+        self.m = len(self.rows)
+        self.n = len(self.rows[0])
+        self.size = (self.m, self.n)
+        self.start = self.start_point()
+        self.splitters = self.find_splitters()
+        self.splitter_dict = self.make_splitter_dict()
+        self.splitter_paths = defaultdict(int, {self.splitters[0]: 1})
+        self.debug = debug
+
+    def splitter_path(self, splitter):
+        index = self.splitters.index(splitter)
+        for split in self.splitters[1 : index + 1]:
+            count = 0
+            if self.splitter_paths[split]:
+                count = self.splitter_paths[split]
+            else:
+                row, col = split
+                if col - 1 in self.splitter_dict[row - 2]:
+                    count += self.splitter_paths[(row - 2, col - 1)]
+                if col + 1 in self.splitter_dict[row - 2]:
+                    count += self.splitter_paths[(row - 2, col + 1)]
+                self.splitter_paths[split] = count
+        if self.debug:
+            print(self.splitter_paths)
+        return count
+
+    # need to check final points on bottom row, not final splitters
+
+    def splitter_path_reset(self):
+        self.splitter_paths = defaultdict(int, {self.splitters[0]: 1})
+
+    def total_paths(self):
+        self.splitter_path(self.splitters[-1])
+        return sum([count for count in self.splitter_paths.values()])
+
+
+test_quantum = QuantumTachyonManifold(test_data, debug=True)
+print(test_quantum.m)
+
+assert test_quantum.splitter_path((4, 6)) == 1
+assert test_quantum.splitter_path((4, 8)) == 1
+assert test_quantum.splitter_path((6, 7)) == 2
+assert test_quantum.splitter_path((12, 2)) == 1
+assert test_quantum.splitter_path((12, 12)) == 1
+assert test_quantum.splitter_path((12, 6)) == 4
+
+
+# assert test_quantum.total_paths() == 40
