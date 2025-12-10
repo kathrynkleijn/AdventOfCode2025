@@ -241,6 +241,7 @@ class QuantumTachyonManifold(TachyonManifold):
         self.splitters = self.find_splitters()
         self.splitter_dict = self.make_splitter_dict()
         self.splitter_paths = defaultdict(int, {self.splitters[0]: 1})
+        self.paths_populated = False
         self.debug = debug
 
     def splitter_path(self, splitter):
@@ -250,28 +251,46 @@ class QuantumTachyonManifold(TachyonManifold):
             if self.splitter_paths[split]:
                 count = self.splitter_paths[split]
             else:
-                row, col = split
-                if col - 1 in self.splitter_dict[row - 2]:
-                    count += self.splitter_paths[(row - 2, col - 1)]
-                if col + 1 in self.splitter_dict[row - 2]:
-                    count += self.splitter_paths[(row - 2, col + 1)]
+                key, col = split
+                rows = [row for row in self.splitter_dict.keys() if row < key]
+                for row in rows:
+                    if col in self.splitter_dict[row]:
+                        break
+                    if col - 1 in self.splitter_dict[row]:
+                        count += self.splitter_paths[(row, col - 1)]
+                    if col + 1 in self.splitter_dict[row]:
+                        count += self.splitter_paths[(row, col + 1)]
                 self.splitter_paths[split] = count
         if self.debug:
             print(self.splitter_paths)
         return count
 
-    # need to check final points on bottom row, not final splitters
-
-    def splitter_path_reset(self):
-        self.splitter_paths = defaultdict(int, {self.splitters[0]: 1})
+    def final_point_path(self, point):
+        if not self.paths_populated:
+            self.splitter_path(self.splitters[-1])
+            self.paths_populated = True
+        row, col = point
+        count = 0
+        for row in self.splitter_dict.keys():
+            if col in self.splitter_dict[row]:
+                break
+            if col - 1 in self.splitter_dict[row]:
+                count += self.splitter_paths[(row, col - 1)]
+            if col + 1 in self.splitter_dict[row]:
+                count += self.splitter_paths[(row, col + 1)]
+        if self.debug:
+            print(point, count)
+        return count
 
     def total_paths(self):
-        self.splitter_path(self.splitters[-1])
-        return sum([count for count in self.splitter_paths.values()])
+        point_paths = 0
+        last_row = self.m - 1
+        for i in range(self.n):
+            point_paths += self.final_point_path((last_row, i))
+        return point_paths
 
 
-test_quantum = QuantumTachyonManifold(test_data, debug=True)
-print(test_quantum.m)
+test_quantum = QuantumTachyonManifold(test_data)
 
 assert test_quantum.splitter_path((4, 6)) == 1
 assert test_quantum.splitter_path((4, 8)) == 1
@@ -281,4 +300,8 @@ assert test_quantum.splitter_path((12, 12)) == 1
 assert test_quantum.splitter_path((12, 6)) == 4
 
 
-# assert test_quantum.total_paths() == 40
+assert test_quantum.total_paths() == 40
+
+
+answer_quantum = QuantumTachyonManifold(input_data)
+print(answer_quantum.total_paths())
