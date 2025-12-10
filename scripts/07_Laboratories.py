@@ -1,7 +1,6 @@
 ## Day 7: Laboratories
 
-from collections import defaultdict, Counter
-from math import factorial
+from collections import defaultdict
 
 # Part 1
 
