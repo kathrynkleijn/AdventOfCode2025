@@ -109,22 +109,24 @@ class SetOfJunctions:
         # add first circuit
         dist, pair = list(self.distances.items())[0]
         self.circuits.append(Circuit(list(pair)))
-        # add circuits until there is only one and it contains all the junction boxes
+        # add circuits until there is only one left over
         count = 1
-        while len(self.circuits) > 1 or self.circuits[0].size < self.size:
+        while len(self.circuits) > 1 or self.circuits[0].size < self.size - 1:
             dist, pair = list(self.distances.items())[count]
-            if self.debug:
-                print(f"{pair=}")
             junction1, junction2 = pair
             added = False
             for circuit in self.circuits:
                 if not added:
-                    if circuit.is_in_circuit(junction1) or circuit.is_in_circuit(
-                        junction2
-                    ):
-                        circuit.add_junctions(list(pair))
+                    if circuit.is_in_circuit(junction1):
+                        circuit.add_junctions([junction2])
                         added = True
                         containing_circuit = circuit
+
+                    elif circuit.is_in_circuit(junction2):
+                        circuit.add_junctions([junction1])
+                        added = True
+                        containing_circuit = circuit
+
                 else:
                     if circuit.is_in_circuit(junction1) or circuit.is_in_circuit(
                         junction2
@@ -134,6 +136,17 @@ class SetOfJunctions:
             if not added:
                 self.circuits.append(Circuit(list(pair)))
             count += 1
+        for junction in self.junctions:
+            if not self.circuits[0].is_in_circuit(junction):
+                distances = sorted(
+                    [
+                        (dist, pair)
+                        for dist, pair in self.distances.items()
+                        if junction in pair
+                    ]
+                )
+                min_dist, pair = distances[0]
+        junction1, junction2 = pair
         if self.debug:
             print(pair)
         return junction1.x * junction2.x
@@ -175,10 +188,13 @@ with open("../input_data/08_Playground.txt", "r", encoding="utf-8") as file:
     input_data = file.read().strip()
 
 answer_set = SetOfJunctions(input_data.split("\n"))
-# print(answer_set.largest_multiplied(1000))
+print(answer_set.largest_multiplied(1000))
 
 
 # Part 2
 
 test_set_2.reset()
 assert test_set_2.connect_all() == 25272
+
+answer_set.reset()
+print(answer_set.connect_all())
