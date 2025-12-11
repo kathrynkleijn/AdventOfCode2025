@@ -50,6 +50,7 @@ class SetOfJunctions:
 
     def __init__(self, junctions=[], debug=False):
         self.junctions = [JunctionBox(junction) for junction in junctions]
+        self.size = len(self.junctions)
         self.distances = self.find_distances()
         self.circuits = []
         self.debug = debug
@@ -103,6 +104,11 @@ class SetOfJunctions:
     def reset(self):
         self.distances = self.find_distances()
         self.circuits = []
+
+    def connect_all(self):
+        while len(self.circuits) > 1 or len(self.circuits[0]) < self.size:
+            # add circuits until there is only one and it contains all the junction boxes
+            pass
 
 
 class Circuit:
