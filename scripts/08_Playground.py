@@ -48,8 +48,54 @@ class JunctionBox:
 
 class SetOfJunctions:
 
-    def __init__(self, *junctions):
-        self.junctions = junctions
+    def __init__(self, junctions=[], debug=False):
+        self.junctions = [JunctionBox(junction) for junction in junctions]
+        self.distances = self.find_distances()
+        self.circuits = []
+        self.debug = debug
+
+    def __str__(self):
+        return " ".join([str(junction) for junction in self.junctions])
+
+    def calculate_distance(self, junction1, junciton2):
+        return math.sqrt(
+            sum([(x - y) ** 2 for x, y in zip(junction1.coords, junciton2.coords)])
+        )
+
+    def find_distances(self):
+        self.distances = defaultdict()
+        for junction1, junction2 in product(self.junctions, self.junctions):
+            if junction1 != junction2:
+                self.distances[self.calculate_distance(junction1, junction2)] = (
+                    junction1,
+                    junction2,
+                )
+        return self.distances
+
+    def find_minimum(self, previous=0):
+        if previous:
+            self.distances.pop(previous)
+        return min([(dist, pair) for dist, pair in self.distances.items()])
+
+    def find_connections(self, num_connections):
+        previous = 0
+        for _ in range(num_connections):
+            previous, pair = self.find_minimum(previous)
+            if self.debug:
+                print(f"{pair=}")
+            junction1, junction2 = pair
+            added = False
+            for circuit in self.circuits:
+                # what if one is in one circuit and the other in another?
+                if circuit.is_in_circuit(junction1) or circuit.is_in_circuit(junction2):
+                    circuit.add_junctions(list(pair))
+                    added = True
+                    break
+            if not added:
+                self.circuits.append(Circuit(list(pair)))
+            if self.debug:
+                print([str(circuit) for circuit in self.circuits])
+        return [circuit.size for circuit in self.circuits]
 
 
 class Circuit:
@@ -58,80 +104,35 @@ class Circuit:
         self.junctions = junctions
         self.size = len(self.junctions)
 
-    def add_junctions(self, *junctions):
-        list(set(self.junctions.extend([junctions])))
+    def __str__(self):
+        return " ".join([str(junction) for junction in self.junctions])
 
+    def add_junctions(self, junctions):
+        for junction in junctions:
+            if junction not in self.junctions:
+                self.junctions.append(junction)
+        self.size = len(self.junctions)
+        return self.junctions
 
-def calculate_distance(junction1, junciton2):
-    return math.sqrt(
-        sum([(x - y) ** 2 for x, y in zip(junction1.coords, junciton2.coords)])
-    )
-
-
-def parse_data(data):
-    junctions = []
-    for junction in data.split("\n"):
-        junctions.append(JunctionBox(junction))
-    return junctions
-
-
-def find_minimum_distance(data, previous=0):
-    min_dist = 1e10
-    for junction1, junction2 in product(parse_data(data), parse_data(data)):
-        if junction1 != junction2:
-            dist = calculate_distance(junction1, junction2)
-            if dist < min_dist and dist > previous:
-                min_dist = dist
-                pair = (junction1, junction2)
-    return pair, min_dist
+    def is_in_circuit(self, junction):
+        if junction in self.junctions:
+            return True
+        return False
 
 
 test_junction1 = JunctionBox("162,817,812")
 test_junction2 = JunctionBox("425,690,689")
 
 
-assert find_minimum_distance(test_data) == (
-    (test_junction1, test_junction2),
-    calculate_distance(test_junction1, test_junction2),
-)
+test_set = SetOfJunctions(["162,817,812", "425,690,689"])
 
-
-def find_distances(data):
-    distances = defaultdict()
-    for junction1, junction2 in product(parse_data(data), parse_data(data)):
-        if junction1 != junction2:
-            distances[calculate_distance(junction1, junction2)] = (junction1, junction2)
-    return distances
-
-
-def find_minimum(distances, previous=0):
-    last_pair = [pair for dist, pair in distances.items() if dist == previous]
-    if last_pair:
-        distances.pop(last_pair[0])
-    return min([(dist, pair) for dist, pair in distances.items()])
-
-
-test_distances = find_distances(test_data)
-assert find_minimum(test_distances) == (
+assert test_set.find_minimum() == (
     (
-        calculate_distance(test_junction1, test_junction2),
+        316.90219311326956,
         (test_junction2, test_junction1),
     )
 )
 
-
-def find_connections(num_connections, data):
-    circuits = []
-    distances = find_distances(data)
-    previous = 0
-    for _ in range(num_connections):
-        previous, pair = find_minimum(distances, previous)
-        junction1, junction2 = pair
-        added = False
-        for circuit in circuits:
-            if junction1 or junction2 in circuit:
-                circuit.add_junctions(pair)
-                added = True
-                break
-        if not added:
-            circuits.append(Circuit(list(pair)))
+test_set_2 = SetOfJunctions(test_data.split("\n"), debug=True)
+print(test_set_2.find_connections(10))
+# assert sorted(test_set_2.find_connections(10)) == [2, 2, 4, 5]
