@@ -68,17 +68,10 @@ class SetOfJunctions:
                     junction1,
                     junction2,
                 )
-        return self.distances
-
-    def find_minimum(self, previous=0):
-        if previous:
-            self.distances.pop(previous)
-        return min([(dist, pair) for dist, pair in self.distances.items()])
+        return dict(sorted(self.distances.items()))
 
     def find_connections(self, num_connections):
-        previous = 0
-        for _ in range(num_connections):
-            previous, pair = self.find_minimum(previous)
+        for dist, pair in list(self.distances.items())[:num_connections]:
             if self.debug:
                 print(f"{pair=}")
             junction1, junction2 = pair
@@ -136,18 +129,6 @@ class Circuit:
     def merge_circuits(self, circuit):
         self.add_junctions(circuit.junctions)
 
-
-test_junction1 = JunctionBox("162,817,812")
-test_junction2 = JunctionBox("425,690,689")
-
-
-test_set = SetOfJunctions(["162,817,812", "425,690,689"])
-assert test_set.find_minimum() == (
-    (
-        100427,
-        (test_junction2, test_junction1),
-    )
-)
 
 test_set_2 = SetOfJunctions(test_data.split("\n"))
 
