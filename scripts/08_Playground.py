@@ -58,9 +58,7 @@ class SetOfJunctions:
         return " ".join([str(junction) for junction in self.junctions])
 
     def calculate_distance(self, junction1, junciton2):
-        return math.sqrt(
-            sum([(x - y) ** 2 for x, y in zip(junction1.coords, junciton2.coords)])
-        )
+        return sum([(x - y) ** 2 for x, y in zip(junction1.coords, junciton2.coords)])
 
     def find_distances(self):
         self.distances = defaultdict()
@@ -86,16 +84,32 @@ class SetOfJunctions:
             junction1, junction2 = pair
             added = False
             for circuit in self.circuits:
-                # what if one is in one circuit and the other in another?
-                if circuit.is_in_circuit(junction1) or circuit.is_in_circuit(junction2):
-                    circuit.add_junctions(list(pair))
-                    added = True
-                    break
+                if not added:
+                    if circuit.is_in_circuit(junction1) or circuit.is_in_circuit(
+                        junction2
+                    ):
+                        circuit.add_junctions(list(pair))
+                        added = True
+                        containing_circuit = circuit
+                else:
+                    if circuit.is_in_circuit(junction1) or circuit.is_in_circuit(
+                        junction2
+                    ):
+                        circuit.merge_circuits(containing_circuit)
+                        self.circuits.remove(containing_circuit)
             if not added:
                 self.circuits.append(Circuit(list(pair)))
             if self.debug:
                 print([str(circuit) for circuit in self.circuits])
-        return [circuit.size for circuit in self.circuits]
+        return sorted([circuit.size for circuit in self.circuits])
+
+    def largest_multiplied(self, num_connections):
+        sizes = self.find_connections(num_connections)[::-1]
+        return math.prod(sizes[:3])
+
+    def reset(self):
+        self.distances = self.find_distances()
+        self.circuits = []
 
 
 class Circuit:
@@ -119,20 +133,31 @@ class Circuit:
             return True
         return False
 
+    def merge_circuits(self, circuit):
+        self.add_junctions(circuit.junctions)
+
 
 test_junction1 = JunctionBox("162,817,812")
 test_junction2 = JunctionBox("425,690,689")
 
 
 test_set = SetOfJunctions(["162,817,812", "425,690,689"])
-
 assert test_set.find_minimum() == (
     (
-        316.90219311326956,
+        100427,
         (test_junction2, test_junction1),
     )
 )
 
-test_set_2 = SetOfJunctions(test_data.split("\n"), debug=True)
-print(test_set_2.find_connections(10))
-# assert sorted(test_set_2.find_connections(10)) == [2, 2, 4, 5]
+test_set_2 = SetOfJunctions(test_data.split("\n"))
+
+assert test_set_2.find_connections(10) == [2, 2, 4, 5]
+test_set_2.reset()
+assert test_set_2.largest_multiplied(10) == 40
+
+
+with open("../input_data/08_Playground.txt", "r", encoding="utf-8") as file:
+    input_data = file.read().strip()
+
+answer_set = SetOfJunctions(input_data.split("\n"))
+print(answer_set.largest_multiplied(1000))
