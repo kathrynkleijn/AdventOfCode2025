@@ -106,9 +106,37 @@ class SetOfJunctions:
         self.circuits = []
 
     def connect_all(self):
-        while len(self.circuits) > 1 or len(self.circuits[0]) < self.size:
-            # add circuits until there is only one and it contains all the junction boxes
-            pass
+        # add first circuit
+        dist, pair = list(self.distances.items())[0]
+        self.circuits.append(Circuit(list(pair)))
+        # add circuits until there is only one and it contains all the junction boxes
+        count = 1
+        while len(self.circuits) > 1 or self.circuits[0].size < self.size:
+            dist, pair = list(self.distances.items())[count]
+            if self.debug:
+                print(f"{pair=}")
+            junction1, junction2 = pair
+            added = False
+            for circuit in self.circuits:
+                if not added:
+                    if circuit.is_in_circuit(junction1) or circuit.is_in_circuit(
+                        junction2
+                    ):
+                        circuit.add_junctions(list(pair))
+                        added = True
+                        containing_circuit = circuit
+                else:
+                    if circuit.is_in_circuit(junction1) or circuit.is_in_circuit(
+                        junction2
+                    ):
+                        circuit.merge_circuits(containing_circuit)
+                        self.circuits.remove(containing_circuit)
+            if not added:
+                self.circuits.append(Circuit(list(pair)))
+            count += 1
+        if self.debug:
+            print(pair)
+        return junction1.x * junction2.x
 
 
 class Circuit:
@@ -147,4 +175,10 @@ with open("../input_data/08_Playground.txt", "r", encoding="utf-8") as file:
     input_data = file.read().strip()
 
 answer_set = SetOfJunctions(input_data.split("\n"))
-print(answer_set.largest_multiplied(1000))
+# print(answer_set.largest_multiplied(1000))
+
+
+# Part 2
+
+test_set_2.reset()
+assert test_set_2.connect_all() == 25272
