@@ -1,7 +1,7 @@
 ## Day 9: Movie Theater
 
 from itertools import combinations_with_replacement
-from collections import defaultdict
+from operator import itemgetter
 
 # Part 1
 
@@ -97,6 +97,7 @@ print(answer_1)
 
 def possible_pairings(coords):
     possible = {}
+    # assumes current coordinate is top left-hand corner of rectangle
     for test_coord in coords:
         col, row = test_coord[0], test_coord[1]
         check_list = [coord for coord in coords if coord != test_coord]
@@ -106,8 +107,19 @@ def possible_pairings(coords):
         ]
         if smaller_cols:
             # the bottom left corner exists
+            # if we hit something in the same column, then there will be a hole beneath it - remove anything
+            # in a row that is larger than the first row for our column
+            sorted_cols = sorted(smaller_cols, key=itemgetter(1))
+            first_test_col = sorted(
+                [coord for coord in smaller_cols if coord[0] == col], key=itemgetter(1)
+            )
+            if first_test_col:
+                first_test_col = first_test_col[0]
+                index = sorted_cols.index(first_test_col)
+            else:
+                index = len(sorted_cols) - 1
             # what's the largest row for these coordinates? this is the largest bottom right corner
-            check_row = max([coord[1] for coord in smaller_cols])
+            check_row = max([coord[1] for coord in sorted_cols[: index + 1]])
             # is there another coordinate with the same row or before, and a larger column?
             smaller_rows = [
                 coord for coord in check_list if (coord[1] <= row) and (coord[0] > col)
@@ -115,7 +127,17 @@ def possible_pairings(coords):
             if smaller_rows:
                 # the top right corner exists
                 # what's the largest column for these coordinates? this is the largest top left corner
-                check_col = max([coord[0] for coord in smaller_rows])
+                sorted_rows = sorted(smaller_rows, key=itemgetter(1))
+                first_test_row = sorted(
+                    [coord for coord in smaller_rows if coord[1] == row],
+                    key=itemgetter(1),
+                )
+                if first_test_row:
+                    first_test_row = first_test_row[0]
+                    index = sorted_rows.index(first_test_row)
+                else:
+                    index = len(sorted_rows) - 1
+                check_col = max([coord[0] for coord in sorted_rows[: index + 1]])
                 # keep any coordinates that fall in the range of the largest corners
                 check_col_list = [
                     coord
@@ -142,3 +164,5 @@ answer_2 = calulate_max_area_with_green(answer_coords)
 print(answer_2)
 
 # smaller than previous but still higher than second #too large commit
+# what about (7,3) and (11,1)? A rectangle is possible here too.
+# there could be holes - bottom right hand corner is not correct - check from bottom left hand corner where maximum column is?
