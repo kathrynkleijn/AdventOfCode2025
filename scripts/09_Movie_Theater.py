@@ -1,6 +1,7 @@
 ## Day 9: Movie Theater
 
 from itertools import combinations_with_replacement
+from collections import defaultdict
 
 # Part 1
 
@@ -49,26 +50,34 @@ def distance_between(i_coords):
     return distances
 
 
+def distances(coords):
+    x_coords, y_coords = x_y_coordinates(coords)
+    return distance_between(x_coords), distance_between(y_coords)
+
+
+def area_loop(check_list, test_coord, x_distances, y_distances, max_area):
+    for coord in check_list:
+        if coord[0] != test_coord[0]:
+            x_dist = x_distances[(test_coord[0], coord[0])]
+            if coord[1] != test_coord[1]:
+                y_dist = y_distances[(test_coord[1], coord[1])]
+            else:
+                y_dist = 1
+        else:
+            x_dist = 1
+            y_dist = y_distances[(test_coord[1], coord[1])]
+        if x_dist * y_dist > max_area:
+            max_area = x_dist * y_dist
+    return max_area
+
+
 def calculate_max_area(coords):
     max_area = 0
-    x_coords, y_coords = x_y_coordinates(coords)
-    x_distances = distance_between(x_coords)
-    y_distances = distance_between(y_coords)
+    x_distances, y_distances = distances(coords)
     check_list = coords.copy()
     for test_coord in coords:
         check_list = [coord for coord in check_list if coord != test_coord]
-        for coord in check_list:
-            if coord[0] != test_coord[0]:
-                x_dist = x_distances[(test_coord[0], coord[0])]
-                if coord[1] != test_coord[1]:
-                    y_dist = y_distances[(test_coord[1], coord[1])]
-                else:
-                    y_dist = 1
-            else:
-                x_dist = 1
-                y_dist = y_distances[(test_coord[1], coord[1])]
-            if x_dist * y_dist > max_area:
-                max_area = x_dist * y_dist
+        max_area = area_loop(check_list, test_coord, x_distances, y_distances, max_area)
     return max_area
 
 
@@ -82,3 +91,62 @@ with open("../input_data/09_Movie_Theater.txt", "r", encoding="utf-8") as file:
 answer_coords = parse_data(input_data.split("\n"))
 answer_1 = calculate_max_area(answer_coords)
 print(answer_1)
+
+# Part 2
+
+
+def possible_pairings(coords):
+    possible = defaultdict(set)
+    for test_coord in coords:
+        col = test_coord[0]
+        check_list = [coord for coord in coords if coord != test_coord]
+        # is there another coordinate with the same column or before?
+        smaller_cols = [coord for coord in check_list if coord[0] <= col]
+        if smaller_cols:
+            # what's the largest row for the smallest column of these coordinates,
+            # where the row is larger than test row?
+            check_col = set(
+                [coord[0] for coord in smaller_cols if coord[1] > test_coord[1]]
+            )
+            if check_col:
+                for col in check_col:
+                    check_row = max(
+                        [coord[1] for coord in smaller_cols if coord[0] == col]
+                    )
+                    # keep any coordinates that fall in the range of column larger than test col,
+                    # and row smaller than check_row
+                    check_col_list = [
+                        coord
+                        for coord in check_list
+                        if coord[0] >= test_coord[0]
+                        and test_coord[1] <= coord[1] <= check_row
+                    ]
+                    if check_col_list:
+                        for coord in check_col_list:
+                            possible[test_coord].add(coord)
+            else:
+                check_col_list = [
+                    coord
+                    for coord in check_list
+                    if coord[0] >= test_coord[0] and test_coord[1] == coord[1]
+                ]
+                if check_col_list:
+                    for coord in check_col_list:
+                        possible[test_coord].add(coord)
+    return possible
+
+
+def calulate_max_area_with_green(all_coords):
+    max_area = 0
+    x_distances, y_distances = distances(all_coords)
+    possible = possible_pairings(all_coords)
+    max_area = 0
+    for test_coord, check_list in possible.items():
+        max_area = area_loop(check_list, test_coord, x_distances, y_distances, max_area)
+    return max_area
+
+
+assert calulate_max_area_with_green(test_coords) == 24
+
+answer_2 = calulate_max_area_with_green(answer_coords)
+print(answer_2)
