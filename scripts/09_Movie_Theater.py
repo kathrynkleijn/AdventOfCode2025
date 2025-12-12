@@ -98,27 +98,32 @@ print(answer_1)
 def possible_pairings(coords):
     possible = {}
     for test_coord in coords:
-        col = test_coord[0]
+        col, row = test_coord[0], test_coord[1]
         check_list = [coord for coord in coords if coord != test_coord]
         # is there another coordinate with the same column or before, and a larger row?
         smaller_cols = [
-            coord
-            for coord in check_list
-            if (coord[0] <= col) and (coord[1] > test_coord[1])
+            coord for coord in check_list if (coord[0] <= col) and (coord[1] > row)
         ]
         if smaller_cols:
-            # what's the largest row for these coordinates?
+            # the bottom left corner exists
+            # what's the largest row for these coordinates? this is the largest bottom right corner
             check_row = max([coord[1] for coord in smaller_cols])
-            # keep any coordinates that fall in the range of column larger than test col,
-            # and row smaller than check_row
-            check_col_list = [
-                coord
-                for coord in check_list
-                if coord[0] >= test_coord[0] and test_coord[1] <= coord[1] <= check_row
+            # is there another coordinate with the same row or before, and a larger column?
+            smaller_rows = [
+                coord for coord in check_list if (coord[1] <= row) and (coord[0] > col)
             ]
-            if check_col_list:
-                possible[test_coord] = check_col_list
-    # print(possible)
+            if smaller_rows:
+                # the top right corner exists
+                # what's the largest column for these coordinates? this is the largest top left corner
+                check_col = max([coord[0] for coord in smaller_rows])
+                # keep any coordinates that fall in the range of the largest corners
+                check_col_list = [
+                    coord
+                    for coord in check_list
+                    if col <= coord[0] <= check_col and row <= coord[1] <= check_row
+                ]
+                if check_col_list:
+                    possible[test_coord] = check_col_list
     return possible
 
 
@@ -136,4 +141,4 @@ assert calulate_max_area_with_green(test_coords) == 24
 answer_2 = calulate_max_area_with_green(answer_coords)
 print(answer_2)
 
-# previous save lower but still too large
+# smaller than previous but still higher than second #too large commit
