@@ -100,41 +100,24 @@ def possible_pairings(coords):
     for test_coord in coords:
         col = test_coord[0]
         check_list = [coord for coord in coords if coord != test_coord]
-        # is there another coordinate with the same column or before?
-        smaller_cols = [coord for coord in check_list if coord[0] <= col]
+        # is there another coordinate with the same column or before, and a larger row?
+        smaller_cols = [
+            coord
+            for coord in check_list
+            if (coord[0] <= col) and (coord[1] > test_coord[1])
+        ]
         if smaller_cols:
-            # what's the largest row for the smallest column of these coordinates,
-            # where the row is larger than test row?
-            check_col = set(
-                [coord[0] for coord in smaller_cols if coord[1] > test_coord[1]]
-            )
-            # we actually need to check all of these
-            if check_col:
-                if len(check_col) > 1:
-                    check_col = min(check_col)
-                else:
-                    check_col = check_col.pop()
-                check_row = max(
-                    [coord[1] for coord in smaller_cols if coord[0] == check_col]
-                )
-                # keep any coordinates that fall in the range of column larger than test col,
-                # and row smaller than check_row
-                check_col_list = [
-                    coord
-                    for coord in check_list
-                    if coord[0] >= test_coord[0]
-                    and test_coord[1] <= coord[1] <= check_row
-                ]
-                if check_col_list:
-                    possible[test_coord] = check_col_list
-            else:
-                check_col_list = [
-                    coord
-                    for coord in check_list
-                    if coord[0] >= test_coord[0] and test_coord[1] == coord[1]
-                ]
-                if check_col_list:
-                    possible[test_coord] = check_col_list
+            # what's the largest row for these coordinates?
+            check_row = max([coord[1] for coord in smaller_cols])
+            # keep any coordinates that fall in the range of column larger than test col,
+            # and row smaller than check_row
+            check_col_list = [
+                coord
+                for coord in check_list
+                if coord[0] >= test_coord[0] and test_coord[1] <= coord[1] <= check_row
+            ]
+            if check_col_list:
+                possible[test_coord] = check_col_list
     # print(possible)
     return possible
 
@@ -143,7 +126,6 @@ def calulate_max_area_with_green(all_coords):
     max_area = 0
     x_distances, y_distances = distances(all_coords)
     possible = possible_pairings(all_coords)
-    max_area = 0
     for test_coord, check_list in possible.items():
         max_area = area_loop(check_list, test_coord, x_distances, y_distances, max_area)
     return max_area
@@ -153,3 +135,5 @@ assert calulate_max_area_with_green(test_coords) == 24
 
 answer_2 = calulate_max_area_with_green(answer_coords)
 print(answer_2)
+
+# previous save lower but still too large
