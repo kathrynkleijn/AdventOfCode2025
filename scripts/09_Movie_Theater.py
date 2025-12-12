@@ -96,7 +96,7 @@ print(answer_1)
 
 
 def possible_pairings(coords):
-    possible = defaultdict(set)
+    possible = {}
     for test_coord in coords:
         col = test_coord[0]
         check_list = [coord for coord in coords if coord != test_coord]
@@ -108,22 +108,25 @@ def possible_pairings(coords):
             check_col = set(
                 [coord[0] for coord in smaller_cols if coord[1] > test_coord[1]]
             )
+            # we actually need to check all of these
             if check_col:
-                for col in check_col:
-                    check_row = max(
-                        [coord[1] for coord in smaller_cols if coord[0] == col]
-                    )
-                    # keep any coordinates that fall in the range of column larger than test col,
-                    # and row smaller than check_row
-                    check_col_list = [
-                        coord
-                        for coord in check_list
-                        if coord[0] >= test_coord[0]
-                        and test_coord[1] <= coord[1] <= check_row
-                    ]
-                    if check_col_list:
-                        for coord in check_col_list:
-                            possible[test_coord].add(coord)
+                if len(check_col) > 1:
+                    check_col = min(check_col)
+                else:
+                    check_col = check_col.pop()
+                check_row = max(
+                    [coord[1] for coord in smaller_cols if coord[0] == check_col]
+                )
+                # keep any coordinates that fall in the range of column larger than test col,
+                # and row smaller than check_row
+                check_col_list = [
+                    coord
+                    for coord in check_list
+                    if coord[0] >= test_coord[0]
+                    and test_coord[1] <= coord[1] <= check_row
+                ]
+                if check_col_list:
+                    possible[test_coord] = check_col_list
             else:
                 check_col_list = [
                     coord
@@ -131,8 +134,8 @@ def possible_pairings(coords):
                     if coord[0] >= test_coord[0] and test_coord[1] == coord[1]
                 ]
                 if check_col_list:
-                    for coord in check_col_list:
-                        possible[test_coord].add(coord)
+                    possible[test_coord] = check_col_list
+    # print(possible)
     return possible
 
 
