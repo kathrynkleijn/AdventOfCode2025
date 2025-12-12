@@ -165,4 +165,4 @@ print(answer_2)
 
 # smaller than previous but still higher than second #too large commit
 # what about (7,3) and (11,1)? A rectangle is possible here too.
-# there could be holes - bottom right hand corner is not correct - check from bottom left hand corner where maximum column is?
+# there might not be anything directly beneath us.
