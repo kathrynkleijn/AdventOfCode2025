@@ -2,6 +2,7 @@
 
 from itertools import combinations_with_replacement
 from operator import itemgetter
+from collections import defaultdict
 
 # Part 1
 
@@ -126,28 +127,33 @@ def connections(coords):
                 for i in range(col + 1, col_next):
                     if i in x_coords:
                         green_coords.append((i, row))
+                        connection_dict[(i, row)] = ["R", "R"]
             elif col_next < col:
                 connection_dict[coord].append("L")
                 for i in range(col_next + 1, col):
                     if i in x_coords:
                         green_coords.append((i, row))
+                        connection_dict[(i, row)] = ["L", "L"]
         elif col_next == col:
             if row_next > row:
                 connection_dict[coord].append("D")
                 for i in range(row + 1, row_next):
                     if i in y_coords:
                         green_coords.append((col, i))
+                        connection_dict[(col, i)] = ["D", "D"]
             elif row_next < row:
                 connection_dict[coord].append("U")
                 for i in range(row_next + 1, row):
                     if i in y_coords:
                         green_coords.append((col, i))
+                        connection_dict[(col, i)] = ["U", "U"]
         col_prev, row_prev = col, row
     return connection_dict, green_coords
 
 
+# do straight down/straight across rectangles matter?
 def possible_pairings(coords):
-    below_exists = [
+    belowright_exists = [
         ["U", "R"],
         ["D", "R"],
         ["U", "U"],
@@ -155,14 +161,23 @@ def possible_pairings(coords):
         ["U", "L"],
         ["R", "U"],
     ]
+    belowleft_exists = [
+        ["D", "D"],
+        ["D", "R"],
+        ["L", "D"],
+        ["R", "R"],
+        ["R", "U"],
+        ["R", "D"],
+    ]
     connection_dict, green_coords = connections(coords)
     all_coords = coords + green_coords
-    possible = {}
-    # assumes current coordinate is top left-hand corner of rectangle
+    possible = defaultdict(list)
+
     for test_coord in coords:
         col, row = test_coord[0], test_coord[1]
+        # assumes current coordinate is top left-hand corner of rectangle
         # which direction is the circuit coming from and going to? if no greens to right and below, skip
-        if connection_dict[test_coord] in below_exists:
+        if connection_dict[test_coord] in belowright_exists:
             check_list = [coord for coord in all_coords if coord != test_coord]
             # is there another coordinate with the same column or before, and a larger row?
             smaller_cols = [
@@ -170,19 +185,20 @@ def possible_pairings(coords):
             ]
             if smaller_cols:
                 # the bottom left corner exists
-                # if we hit something in the same column, then there will be a hole beneath it - remove anything
-                # in a row that is larger than the first row for our column
+                # if we hit a green which is going sideways in same column,
+                # then there might be a hole beneath it - remove anything with a bigger row than this
                 sorted_cols = sorted(smaller_cols, key=itemgetter(1))
-                first_test_col = sorted(
-                    [coord for coord in smaller_cols if coord[0] == col],
-                    key=itemgetter(1),
-                )
-                if first_test_col:
-                    first_test_col = first_test_col[0]
-                    index = sorted_cols.index(first_test_col)
+                greens = []
+                for green_tile in green_coords:
+                    if green_tile[0] == col and green_tile in smaller_cols:
+                        if connection_dict[green_tile] == ["L", "L"]:
+                            greens.append(green_tile)
+                if greens:
+                    tile = sorted(greens, key=itemgetter(1))[0]
+                    index = sorted_cols.index(tile)
                 else:
                     index = len(sorted_cols) - 1
-                # what's the largest row for these coordinates? this is the largest bottom right corner
+                # what's the largest row for these coordinates? this is the largest bottom left corner
                 check_row = max([coord[1] for coord in sorted_cols[: index + 1]])
                 # is there another coordinate with the same row or before, and a larger column?
                 smaller_rows = [
@@ -192,17 +208,20 @@ def possible_pairings(coords):
                 ]
                 if smaller_rows:
                     # the top right corner exists
-                    # what's the largest column for these coordinates? this is the largest top left corner
-                    sorted_rows = sorted(smaller_rows, key=itemgetter(1))
-                    first_test_row = sorted(
-                        [coord for coord in smaller_rows if coord[1] == row],
-                        key=itemgetter(1),
-                    )
-                    if first_test_row:
-                        first_test_row = first_test_row[0]
-                        index = sorted_rows.index(first_test_row)
+                    # if we hit a green which is going downwards in same row,
+                    # then there might be a hole next to it - remove anything with a bigger column than this
+                    sorted_rows = sorted(smaller_rows)
+                    greens = []
+                    for green_tile in green_coords:
+                        if green_tile[1] == row and green_tile in smaller_rows:
+                            if connection_dict[green_tile] == ["D", "D"]:
+                                greens.append(green_tile)
+                    if greens:
+                        tile = sorted(greens)[0]
+                        index = sorted_rows.index(tile)
                     else:
                         index = len(sorted_rows) - 1
+                    # what's the largest column for these coordinates? this is the largest top left corner
                     check_col = max([coord[0] for coord in sorted_rows[: index + 1]])
                     # keep any coordinates that fall in the range of the largest corners
                     keep_list = [coord for coord in coords if coord != test_coord]
@@ -213,6 +232,64 @@ def possible_pairings(coords):
                     ]
                     if check_col_list:
                         possible[test_coord] = check_col_list
+        # assumes current coordinate is top right-hand corner of rectangle
+        # which direction is the circuit coming from and going to? if no greens to left and below, skip
+        if connection_dict[test_coord] in belowleft_exists:
+            check_list = [coord for coord in all_coords if coord != test_coord]
+            # is there another coordinate with the same column or before, and a larger row?
+            smaller_cols = [
+                coord for coord in check_list if (coord[0] <= col) and (coord[1] > row)
+            ]
+            if smaller_cols:
+                # the bottom right corner exists
+                # if we hit a green which is going sideways in same column,
+                # then there might be a hole beneath it - remove anything with a bigger row than this
+                sorted_cols = sorted(smaller_cols, key=itemgetter(1))
+                greens = []
+                for green_tile in green_coords:
+                    if green_tile[0] == col and green_tile in smaller_cols:
+                        if connection_dict[green_tile] == ["R", "R"]:
+                            greens.append(green_tile)
+                if greens:
+                    tile = sorted(greens, key=itemgetter(1))[0]
+                    index = sorted_cols.index(tile)
+                else:
+                    index = len(sorted_cols) - 1
+                # what's the largest row for these coordinates? this is the largest bottom right corner
+                check_row = max([coord[1] for coord in sorted_cols[: index + 1]])
+                # is there another coordinate with the same row or before, and a smaller column?
+                smaller_rows = [
+                    coord
+                    for coord in check_list
+                    if (coord[1] <= row) and (coord[0] < col)
+                ]
+                if smaller_rows:
+                    # the top left corner exists
+                    # if we hit a green which is going upwards in same row,
+                    # then there might be a hole next to it - remove anything with a smaller column than this
+                    sorted_rows = sorted(smaller_rows)[::-1]
+                    greens = []
+                    for green_tile in green_coords:
+                        if green_tile[1] == row and green_tile in smaller_rows:
+                            if connection_dict[green_tile] == ["U", "U"]:
+                                greens.append(green_tile)
+                    if greens:
+                        tile = sorted(greens)[-1]
+                        index = sorted_rows.index(tile)
+                    else:
+                        index = len(sorted_rows) - 1
+                    # what's the smallest column for these coordinates? this is the smallest top left corner
+                    check_col = max([coord[0] for coord in sorted_rows[: index + 1]])
+                    # keep any coordinates that fall in the range of the largest corners
+                    keep_list = [coord for coord in coords if coord != test_coord]
+                    check_col_list = [
+                        coord
+                        for coord in keep_list
+                        if check_col <= coord[0] <= col and row <= coord[1] <= check_row
+                    ]
+                    if check_col_list:
+                        possible[test_coord].extend(check_col_list)
+
     return possible
 
 
