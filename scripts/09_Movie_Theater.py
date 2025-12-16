@@ -56,6 +56,7 @@ def distances(coords):
 
 def area_loop(check_list, test_coord, x_distances, y_distances, max_area):
     for coord in check_list:
+        # print(f"{coord=},{test_coord=},{max_area=}")
         if coord[0] != test_coord[0]:
             x_dist = x_distances[(test_coord[0], coord[0])]
             if coord[1] != test_coord[1]:
@@ -67,6 +68,8 @@ def area_loop(check_list, test_coord, x_distances, y_distances, max_area):
             y_dist = y_distances[(test_coord[1], coord[1])]
         if x_dist * y_dist > max_area:
             max_area = x_dist * y_dist
+            # print(f"bigger, {max_area=}")
+        # print(f"{max_area=}")
     return max_area
 
 
@@ -92,6 +95,45 @@ answer_1 = calculate_max_area(answer_coords)
 print(answer_1)
 
 # Part 2
+
+test_data2 = """4,2
+13,2
+13,4
+8,4
+8,6
+11,6
+11,10
+4,10"""
+
+test_data3 = """3,2
+13,2
+13,4
+8,4
+8,6
+11,6
+11,11
+7,11
+7,8
+5,8
+5,10
+3,10"""
+
+test_data4 = """3,2
+17,2
+17,13
+13,13
+13,11
+15,11
+15,8
+11,8
+11,15
+18,15
+18,17
+4,17
+4,12
+6,12
+6,5
+3,5"""
 
 
 def connections(coords):
@@ -151,7 +193,6 @@ def connections(coords):
     return connection_dict, green_coords
 
 
-# do straight down/straight across rectangles matter?
 def possible_pairings(coords):
     belowright_exists = [
         ["U", "R"],
@@ -225,13 +266,36 @@ def possible_pairings(coords):
                     check_col = max([coord[0] for coord in sorted_rows[: index + 1]])
                     # keep any coordinates that fall in the range of the largest corners
                     keep_list = [coord for coord in coords if coord != test_coord]
-                    check_col_list = [
+
+                    straight_line_list = [
                         coord
                         for coord in keep_list
-                        if col <= coord[0] <= check_col and row <= coord[1] <= check_row
+                        if (coord[0] == col and row <= coord[1] <= check_row)
+                        or (coord[1] == row and col <= coord[0] <= check_col)
                     ]
-                    if check_col_list:
-                        possible[test_coord] = check_col_list
+                    if straight_line_list:
+                        possible[test_coord].extend(straight_line_list)
+                    non_line_list = sorted(
+                        [
+                            coord
+                            for coord in keep_list
+                            if col < coord[0] <= check_col
+                            and row < coord[1] <= check_row
+                        ]
+                    )
+                    if non_line_list:
+                        min_col = sorted(non_line_list)[0][0]
+                        col_sort = [
+                            coord for coord in non_line_list if coord[0] == min_col
+                        ]
+                        min_row = sorted(non_line_list, key=itemgetter(1))[0][1]
+                        row_sort = [
+                            coord for coord in non_line_list if coord[1] == min_row
+                        ]
+                        sorted_coords = list(set(col_sort + row_sort))
+                        possible[test_coord].extend(sorted_coords)
+                        # possible[test_coord].extend(non_line_list)
+
         # assumes current coordinate is top right-hand corner of rectangle
         # which direction is the circuit coming from and going to? if no greens to left and below, skip
         if connection_dict[test_coord] in belowleft_exists:
@@ -242,9 +306,22 @@ def possible_pairings(coords):
             ]
             if smaller_cols:
                 # the bottom right corner exists
+                # if we hit another red in our column that is going sideways,
+                # then there's a hole beneath and we should remove it
+                sorted_cols = sorted(smaller_cols, key=itemgetter(1))
+                first_test_col = sorted(
+                    [coord for coord in smaller_cols if coord[0] == col],
+                    key=itemgetter(1),
+                )
+                if first_test_col:
+                    first_test_col = first_test_col[0]
+                    index = sorted_cols.index(first_test_col)
+                else:
+                    index = len(sorted_cols) - 1
+                sorted_cols = sorted_cols[: index + 1]
+
                 # if we hit a green which is going sideways in same column,
                 # then there might be a hole beneath it - remove anything with a bigger row than this
-                sorted_cols = sorted(smaller_cols, key=itemgetter(1))
                 greens = []
                 for green_tile in green_coords:
                     if green_tile[0] == col and green_tile in smaller_cols:
@@ -255,6 +332,7 @@ def possible_pairings(coords):
                     index = sorted_cols.index(tile)
                 else:
                     index = len(sorted_cols) - 1
+
                 # what's the largest row for these coordinates? this is the largest bottom right corner
                 check_row = max([coord[1] for coord in sorted_cols[: index + 1]])
                 # is there another coordinate with the same row or before, and a smaller column?
@@ -265,6 +343,18 @@ def possible_pairings(coords):
                 ]
                 if smaller_rows:
                     # the top left corner exists
+                    sorted_rows = sorted(smaller_rows, key=itemgetter(1))
+                    # if we hit another red in our row that is going upwards,
+                    # then there's a hole beneath and we should remove it
+                    first_test_row = sorted(
+                        [coord for coord in smaller_rows if coord[1] == row],
+                        key=itemgetter(1),
+                    )
+                    if first_test_row:
+                        first_test_row = first_test_row[0]
+                        index = sorted_rows.index(first_test_row)
+                    else:
+                        index = len(sorted_rows) - 1
                     # if we hit a green which is going upwards in same row,
                     # then there might be a hole next to it - remove anything with a smaller column than this
                     sorted_rows = sorted(smaller_rows)[::-1]
@@ -279,17 +369,46 @@ def possible_pairings(coords):
                     else:
                         index = len(sorted_rows) - 1
                     # what's the smallest column for these coordinates? this is the smallest top left corner
-                    check_col = max([coord[0] for coord in sorted_rows[: index + 1]])
+                    check_col = min([coord[0] for coord in sorted_rows[: index + 1]])
                     # keep any coordinates that fall in the range of the largest corners
                     keep_list = [coord for coord in coords if coord != test_coord]
-                    check_col_list = [
+                    straight_line_list = [
                         coord
                         for coord in keep_list
-                        if check_col <= coord[0] <= col and row <= coord[1] <= check_row
+                        if (coord[0] == col and row <= coord[1] <= check_row)
+                        or (coord[1] == row and check_col <= coord[0] <= col)
                     ]
-                    if check_col_list:
-                        possible[test_coord].extend(check_col_list)
-
+                    if straight_line_list:
+                        possible[test_coord].extend(straight_line_list)
+                    non_line_list = sorted(
+                        [
+                            coord
+                            for coord in keep_list
+                            if check_col <= coord[0] < col
+                            and row < coord[1] <= check_row
+                        ]
+                    )
+                    if non_line_list:
+                        max_col = sorted(non_line_list)[-1][0]
+                        col_sort = [
+                            coord for coord in non_line_list if coord[0] == max_col
+                        ]
+                        min_row = sorted(non_line_list, key=itemgetter(1))[0][1]
+                        row_sort = [
+                            coord for coord in non_line_list if coord[1] == min_row
+                        ]
+                        print(f"{test_coord=},{col_sort=},{row_sort=}")
+                        sorted_coords = list(set(col_sort + row_sort))
+                        possible[test_coord].extend(sorted_coords)
+        # left-direction straight lines
+        if connection_dict[test_coord] in [["L", "L"], ["L", "U"], ["D", "L"]]:
+            index = coords.index(test_coord)
+            # add next coordinate as possible pairing
+            if index < len(coords) - 1:
+                possible[test_coord].append(coords[index + 1])
+            else:
+                possible[test_coord].append(coords[0])
+    print(possible)
     return possible
 
 
@@ -298,11 +417,22 @@ def calulate_max_area_with_green(all_coords):
     x_distances, y_distances = distances(all_coords)
     possible = possible_pairings(all_coords)
     for test_coord, check_list in possible.items():
+        # print(f"{test_coord=},{max_area=}")
         max_area = area_loop(check_list, test_coord, x_distances, y_distances, max_area)
     return max_area
 
 
-assert calulate_max_area_with_green(test_coords) == 24
+# assert calulate_max_area_with_green(test_coords) == 24
 
-answer_2 = calulate_max_area_with_green(answer_coords)
-print(answer_2)
+test_coords2 = parse_data(test_data2.split("\n"))
+test_coords3 = parse_data(test_data3.split("\n"))
+test_coords4 = parse_data(test_data4.split("\n"))
+
+print(calulate_max_area_with_green(test_coords3))
+
+assert calulate_max_area_with_green(test_coords2) == 40
+# assert calulate_max_area_with_green(test_coords3) == 35
+# assert calulate_max_area_with_green(test_coords4) == 66
+
+# answer_2 = calulate_max_area_with_green(answer_coords)
+# print(answer_2)
