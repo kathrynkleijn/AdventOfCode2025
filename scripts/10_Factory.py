@@ -32,6 +32,7 @@ class Machine:
         self.joltage = [int(jolt) for jolt in joltage.split(",")]
         self.size = len(self.indicator)
         self.current = ["."] * self.size
+        self.solutions = []
         self.debug = debug
 
     def __str__(self):
@@ -106,78 +107,63 @@ class Machine:
                 single_buttons = [
                     button for button, num in remaining_count.items() if num == 1
                 ]
-        print(remaining_joltage, tot_joltage)
-        length = tot_joltage
-        remaining_joltage, button_list, length = self.min_remaining_loop(
-            remaining_joltage, button_list, length
-        )
-        return length
 
-    def min_remaining_loop(self, remaining_joltage, button_list, length):
-        min_remaining = min([x for x in remaining_joltage if x != 0])
-        min_index = remaining_joltage.index(min_remaining)
-        buttons_with_min = [press for press in button_list if min_index in press]
+        length = tot_joltage
+        self.solutions = []
+        self.max_remaining_loop(remaining_joltage, button_list, length)
+        return min(self.solutions)
+
+    def max_remaining_loop(self, remaining_joltage, button_list, length):
+        max_remaining = max([x for x in remaining_joltage if x != 0])
+        max_index = remaining_joltage.index(max_remaining)
+        buttons_with_max = [press for press in button_list if max_index in press]
+
         if self.debug:
             print(
-                f"{remaining_joltage=},{min_remaining=},{min_index=},{buttons_with_min=}"
+                f"{remaining_joltage=},{max_remaining=},{max_index=},{buttons_with_max=}"
             )
-        for presses in combinations_with_replacement(buttons_with_min, min_remaining):
+
+        for presses in combinations_with_replacement(buttons_with_max, max_remaining):
             total_presses = [light for lights in presses for light in lights]
             count = Counter(total_presses)
-            new_joltage = [0] * self.size
+            leftover_joltage = remaining_joltage.copy()
             for p, num in count.items():
-                new_joltage[p] = num
-            leftover_joltage = [j - i for j, i in zip(remaining_joltage, new_joltage)]
+                leftover_joltage[p] = remaining_joltage[p] - num
+
             if self.debug:
-                print(
-                    f"{presses=}, {new_joltage=}, {remaining_joltage=}, {leftover_joltage=}"
-                )
-                if len(set(leftover_joltage)) == 1:
-                    length += min_remaining
-                    return leftover_joltage, button_list, length
-                if any(x < 0 for x in leftover_joltage):
-                    continue
-                length += min_remaining
-                unique_presses = {tuple(p) for p in presses}
-                for press in unique_presses:
-                    button_list.remove(list(press))
-                remaining_joltage, button_list, length = self.min_remaining_loop(
-                    leftover_joltage, button_list, length
-                )
-                return remaining_joltage, button_list, length
-        return remaining_joltage, button_list, length
+                print(f"{presses=}, {remaining_joltage=}, {leftover_joltage=}")
 
-        # found = False
-        # length = min_presses - 1
-        # while not found:
-        #         length += 1
-        #         for presses in combinations_with_replacement(button_list, length):
-        #             total_presses = [light for lights in presses for light in lights]
-        #             count = Counter(total_presses)
-        #             new_joltage = [0] * self.size
-        #             for p, num in count.items():
-        #                 new_joltage[p] = num
-        #             if self.debug:
-        #                 print(f"{presses=}, {new_joltage=}, {remaining_joltage=}")
-        #             if new_joltage == remaining_joltage:
-        #                 found = True
-        #                 break
-        return min_remaining + tot_joltage
+            # negative remainder not acceptable
+            if any(x < 0 for x in leftover_joltage):
+                continue
+
+            # store possible solution
+            if len(set(leftover_joltage)) == 1:
+                self.solutions.append(length + max_remaining)
+                continue
+
+            # leftover joltage - recurse until solution found
+            unique_presses = {tuple(p) for p in presses}
+            button_list_copy = button_list.copy()
+            for press in unique_presses:
+                button_list_copy.remove(list(press))
+
+            self.max_remaining_loop(
+                leftover_joltage, button_list_copy, length + max_remaining
+            )
+        return
 
 
-# find smallest and set of buttons including it - find joltage after this?
-
-
-test_machines = parse_data(test_data, debug=True)
+test_machines = parse_data(test_data)
 test_machine_1 = test_machines[0]
 
-# assert test_machine_1.button_press([1, 3]) == [".", "#", ".", "#"]
+assert test_machine_1.button_press([1, 3]) == [".", "#", ".", "#"]
 
-# assert test_machine_1.minimum_presses() == 2
+assert test_machine_1.minimum_presses() == 2
 
 test_machine_2 = test_machines[-1]
 
-# assert test_machine_2.minimum_presses() == 2
+assert test_machine_2.minimum_presses() == 2
 
 
 def minimum_all_machines(data, debug=False):
@@ -196,14 +182,13 @@ assert minimum_all_machines(test_data) == 7
 with open("../input_data/10_Factory.txt", "r", encoding="utf-8") as file:
     input_data = file.read().strip()
 
-# answer_1 = minimum_all_machines(input_data)
-# print(answer_1)
+answer_1 = minimum_all_machines(input_data)
+print(answer_1)
 
 # Part 2
-print(test_machine_1.minimum_joltage_presses())
-# assert test_machine_1.minimum_joltage_presses() == 10
-print(test_machine_2.minimum_joltage_presses())
-# assert test_machine_2.minimum_joltage_presses() == 11
+
+assert test_machine_1.minimum_joltage_presses() == 10
+assert test_machine_2.minimum_joltage_presses() == 11
 
 
 def minimum_joltage_all_machines(data, debug=False):
@@ -217,10 +202,7 @@ def minimum_joltage_all_machines(data, debug=False):
     return presses
 
 
-# assert minimum_joltage_all_machines(test_data) == 33
+assert minimum_joltage_all_machines(test_data) == 33
 
-# answer_2 = minimum_joltage_all_machines(input_data)
-# print(answer_2)
-
-
-# maybe we can build it up? Work out singles, then what's left of the other joltages
+answer_2 = minimum_joltage_all_machines(input_data)
+print(answer_2)
