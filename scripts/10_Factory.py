@@ -78,29 +78,33 @@ class Machine:
         return length
 
     def minimum_joltage_presses(self):
+        # need at least the maximum joltage number of presses
+        min_presses = max(self.joltage)
         found = False
-        for press in self.buttons:
-            new_joltage = [0] * self.size
-            for p in press:
-                new_joltage[p] = 1
-            if new_joltage == self.joltage:
-                return 1
-        length = 1
-        while not found:
-            length += 1
-            for presses in combinations_with_replacement(self.buttons, length):
-                total_presses = [light for lights in presses for light in lights]
-                count = Counter(total_presses)
+        if min_presses == 1:
+            for press in self.buttons:
                 new_joltage = [0] * self.size
-                for p, num in count.items():
-                    new_joltage[p] = num
-                if self.debug:
-                    print(f"{presses=}, {new_joltage}=, {self.indicator_list=}")
-                # we need the number of presses on off lights to be even, and on lights to be odd
-                # check if odd presses matches the indicator list
+                for p in press:
+                    new_joltage[p] = 1
                 if new_joltage == self.joltage:
-                    found = True
-                    break
+                    return 1
+        else:
+            length = min_presses - 1
+            while not found:
+                length += 1
+                for presses in combinations_with_replacement(self.buttons, length):
+                    total_presses = [light for lights in presses for light in lights]
+                    count = Counter(total_presses)
+                    new_joltage = [0] * self.size
+                    for p, num in count.items():
+                        new_joltage[p] = num
+                    if self.debug:
+                        print(f"{presses=}, {new_joltage}=, {self.indicator_list=}")
+                    # we need the number of presses on off lights to be even, and on lights to be odd
+                    # check if odd presses matches the indicator list
+                    if new_joltage == self.joltage:
+                        found = True
+                        break
         return length
 
 
