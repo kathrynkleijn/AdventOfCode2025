@@ -32,7 +32,7 @@ class Machine:
         self.joltage = [int(jolt) for jolt in joltage.split(",")]
         self.size = len(self.indicator)
         self.current = ["."] * self.size
-        self.solutions = []
+        self.equations = []
         self.debug = debug
 
     def __str__(self):
@@ -78,92 +78,86 @@ class Machine:
                     break
         return length
 
-    def minimum_joltage_presses(self):
-        button_list = self.buttons
-        remaining_joltage = self.joltage.copy()
-        # calculate number of presses for any button which appears only once in available presses
-        all_buttons = [press for presses in self.buttons for press in presses]
-        button_count = Counter(all_buttons)
-        single_buttons = [button for button, num in button_count.items() if num == 1]
-        tot_joltage = 0
-        while single_buttons:
-            for button in single_buttons:
-                joltage = self.joltage[button]
-                # which button press is this in? press this one joltage-1 times
-                press = [p for p in self.buttons if button in p]
-                button_list.remove(press[0])
-                # what joltage does this give? remove from joltage
-                for button in press[0]:
-                    remaining_joltage[button] = remaining_joltage[button] - joltage
-                tot_joltage += joltage
-                if any(remaining_joltage) == 0:
-                    single_buttons = False
+    def joltage_equation_system(self):
+        for button in range(self.size):
+            equation = [0] * len(self.buttons)
+            for num, press in enumerate(self.buttons):
+                if button in press:
+                    equation[num] = 1
+            equation.append(self.joltage[button])
+            self.equations.append(equation)
+        return self.equations
+
+    def sort_equations(self):
+        self.equations = sorted(self.equations)[::-1]
+        return self.equations
+
+    def row_echelon(self):
+        m = len(self.equations)
+        for j in range(1, m):
+            for i in range(j, m):
+                if self.equations[i][j - 1] != 0:
+                    multiplier = self.equations[i][j - 1] / self.equations[j - 1][j - 1]
+                    self.equations[i] = [
+                        y - multiplier * x
+                        for x, y in zip(self.equations[j - 1], self.equations[i])
+                    ]
+        return self.equations
+
+    def reduced_row_echelon(self):
+        m = len(self.equations)
+        n = len(self.equations[0])
+        for j in reversed(range(m - 1)):
+            for i in range(j + 1, n - 1):
+                if (
+                    self.equations[j + 1][i] == self.equations[j][i]
+                    and self.equations[j][i] != 0
+                ):
+                    self.equations[j] = [
+                        int(x - y)
+                        for x, y in zip(self.equations[j], self.equations[j + 1])
+                    ]
                     break
-            if single_buttons:
-                remaining_buttons = [
-                    press for presses in button_list for press in presses
-                ]
-                remaining_count = Counter(remaining_buttons)
-                single_buttons = [
-                    button for button, num in remaining_count.items() if num == 1
-                ]
+        return self.equations
 
-        length = tot_joltage
-        self.solutions = []
-        self.max_remaining_loop(remaining_joltage, button_list, length)
-        return min(self.solutions)
+    def find_free_variables(self):
+        free = []
+        n = len(self.equations[0])
+        for j in range(n - 1):
+            col = [x[j] for x in self.equations]
+            print(col)
+            if Counter(col)[1] > 1:
+                free.append(j)
+        return free
 
-    def max_remaining_loop(self, remaining_joltage, button_list, length):
-        max_remaining = max([x for x in remaining_joltage if x != 0])
-        max_index = remaining_joltage.index(max_remaining)
-        buttons_with_max = [press for press in button_list if max_index in press]
-
-        if self.debug:
-            print(
-                f"{remaining_joltage=},{max_remaining=},{max_index=},{buttons_with_max=}"
-            )
-
-        for presses in combinations_with_replacement(buttons_with_max, max_remaining):
-            total_presses = [light for lights in presses for light in lights]
-            count = Counter(total_presses)
-            leftover_joltage = remaining_joltage.copy()
-            for p, num in count.items():
-                leftover_joltage[p] = remaining_joltage[p] - num
-
-            if self.debug:
-                print(f"{presses=}, {remaining_joltage=}, {leftover_joltage=}")
-
-            # negative remainder not acceptable
-            if any(x < 0 for x in leftover_joltage):
-                continue
-
-            # store possible solution
-            if len(set(leftover_joltage)) == 1:
-                self.solutions.append(length + max_remaining)
-                continue
-
-            # leftover joltage - recurse until solution found
-            unique_presses = {tuple(p) for p in presses}
-            button_list_copy = button_list.copy()
-            for press in unique_presses:
-                button_list_copy.remove(list(press))
-
-            self.max_remaining_loop(
-                leftover_joltage, button_list_copy, length + max_remaining
-            )
-        return
+    def find_solutions(self, free):
+        for i in range():
+            for j in range():
+                partial_solution = [None] * len(self.equations[0])
+                partial_solution[free[0]] = i
+                partial_solution[free[1]] = j
+                for equation in self.equations[::-1]:
+                    # need to keep sign of x
+                    equation_solution = [
+                        partial_solution[num] if x != 0 else x
+                        for num, x in enumerate(equation[:-1])
+                    ]
+                    solution = equation[-1] - sum(equation_solution)
+                    # check if equation solution makes sense
+                    if solution >= 0:
+                        partial_solution
 
 
-test_machines = parse_data(test_data)
+test_machines = parse_data(test_data, debug=True)
 test_machine_1 = test_machines[0]
 
-assert test_machine_1.button_press([1, 3]) == [".", "#", ".", "#"]
+# assert test_machine_1.button_press([1, 3]) == [".", "#", ".", "#"]
 
-assert test_machine_1.minimum_presses() == 2
+# assert test_machine_1.minimum_presses() == 2
 
-test_machine_2 = test_machines[-1]
+# test_machine_2 = test_machines[-1]
 
-assert test_machine_2.minimum_presses() == 2
+# assert test_machine_2.minimum_presses() == 2
 
 
 def minimum_all_machines(data, debug=False):
@@ -182,13 +176,29 @@ assert minimum_all_machines(test_data) == 7
 with open("../input_data/10_Factory.txt", "r", encoding="utf-8") as file:
     input_data = file.read().strip()
 
-answer_1 = minimum_all_machines(input_data)
-print(answer_1)
+# answer_1 = minimum_all_machines(input_data)
+# print(answer_1)
 
 # Part 2
 
-assert test_machine_1.minimum_joltage_presses() == 10
-assert test_machine_2.minimum_joltage_presses() == 11
+
+assert test_machine_1.joltage_equation_system() == [
+    [0, 0, 0, 0, 1, 1, 3],
+    [0, 1, 0, 0, 0, 1, 5],
+    [0, 0, 1, 1, 1, 0, 4],
+    [1, 1, 0, 1, 0, 0, 7],
+]
+assert test_machine_1.sort_equations() == [
+    [1, 1, 0, 1, 0, 0, 7],
+    [0, 1, 0, 0, 0, 1, 5],
+    [0, 0, 1, 1, 1, 0, 4],
+    [0, 0, 0, 0, 1, 1, 3],
+]
+
+print(test_machine_1.reduced_row_echelon())
+print(test_machine_1.find_free_variables())
+# assert test_machine_1.minimum_joltage_presses() == 10
+# assert test_machine_2.minimum_joltage_presses() == 11
 
 
 def minimum_joltage_all_machines(data, debug=False):
@@ -202,7 +212,7 @@ def minimum_joltage_all_machines(data, debug=False):
     return presses
 
 
-assert minimum_joltage_all_machines(test_data) == 33
+# assert minimum_joltage_all_machines(test_data) == 33
 
-answer_2 = minimum_joltage_all_machines(input_data)
-print(answer_2)
+# answer_2 = minimum_joltage_all_machines(input_data)
+# print(answer_2)
