@@ -117,7 +117,6 @@ class Machine:
                         int(x - y)
                         for x, y in zip(self.equations[j], self.equations[j + 1])
                     ]
-                    break
         return self.equations
 
     def find_free_variables(self):
@@ -125,39 +124,98 @@ class Machine:
         n = len(self.equations[0])
         for j in range(n - 1):
             col = [x[j] for x in self.equations]
-            print(col)
             if Counter(col)[1] > 1:
                 free.append(j)
         return free
 
-    def find_solutions(self, free):
-        for i in range():
-            for j in range():
-                partial_solution = [None] * len(self.equations[0])
+    def range_for_free(self, free):
+        ranges = {}
+        for equation in self.equations[::-1]:
+            unknowns = [num for num, val in enumerate(equation[:-1]) if val != 0]
+            # check if equation has only two vaiables
+            num_variables = len(unknowns)
+            # check that one of them is a free variable
+            free_variables = [num for num in unknowns if num in free]
+            if num_variables == 2 and free_variables:
+                ranges[free_variables[0]] = equation[-1]
+                break
+        for free_variable in free:
+            if free_variable != free_variables[0]:
+                presses = self.buttons[free_variable]
+                range = min([button for button in self.joltage if button in presses])
+                ranges[free_variable] = range
+        return ranges
+
+    def find_solutions(self, free, ranges):
+        total_presses = 1e10
+        for i in range(ranges[free[0]] + 1):
+            for j in range(ranges[free[1]] + 1):
+                partial_solution = [None] * (len(self.equations[0]) - 1)
                 partial_solution[free[0]] = i
                 partial_solution[free[1]] = j
-                for equation in self.equations[::-1]:
-                    # need to keep sign of x
+                check_equations = self.equations[::-1].copy()
+                not_solved = []
+                solved_variable = False
+                for num, equation in enumerate(check_equations):
                     equation_solution = [
-                        partial_solution[num] if x != 0 else x
-                        for num, x in enumerate(equation[:-1])
+                        x * y
+                        for x, y in zip(equation[:-1], partial_solution)
+                        if y is not None
                     ]
-                    solution = equation[-1] - sum(equation_solution)
-                    # check if equation solution makes sense
-                    if solution >= 0:
-                        partial_solution
+                    unknowns = [
+                        (num, x)
+                        for num, x in enumerate(equation[:-1])
+                        if partial_solution[num] == None and x != 0
+                    ]
+                    if len(unknowns) == 0:
+                        if sum(equation_solution) != equation[-1]:
+                            break
+                        else:
+                            continue
+                    if len(unknowns) == 1:
+                        solution = (equation[-1] - sum(equation_solution)) / unknowns[
+                            0
+                        ][1]
+                        if solution >= 0:
+                            variable = unknowns[0][0]
+                            partial_solution[variable] = int(solution)
+                            solved_variable = True
+                    else:
+                        not_solved.append(num)
+                if solved_variable:
+                    if len(not_solved) > 0:
+                        check_equations = [
+                            equation
+                            for num, equation in enumerate(self.equations[::-1])
+                            if num in not_solved
+                        ]
+                    elif None not in partial_solution:
+                        if sum(partial_solution) < total_presses:
+                            total_presses = sum(partial_solution)
+                if not solved_variable and len(not_solved) > 0:
+                    continue
+
+        return total_presses
+
+    def minimum_joltage_presses(self):
+        self.joltage_equation_system()
+        self.sort_equations()
+        self.reduced_row_echelon()
+        free = self.find_free_variables()
+        ranges = self.range_for_free(free)
+        return self.find_solutions(free, ranges)
 
 
-test_machines = parse_data(test_data, debug=True)
+test_machines = parse_data(test_data)
 test_machine_1 = test_machines[0]
 
-# assert test_machine_1.button_press([1, 3]) == [".", "#", ".", "#"]
+assert test_machine_1.button_press([1, 3]) == [".", "#", ".", "#"]
 
-# assert test_machine_1.minimum_presses() == 2
+assert test_machine_1.minimum_presses() == 2
 
-# test_machine_2 = test_machines[-1]
+test_machine_2 = test_machines[-1]
 
-# assert test_machine_2.minimum_presses() == 2
+assert test_machine_2.minimum_presses() == 2
 
 
 def minimum_all_machines(data, debug=False):
@@ -176,8 +234,8 @@ assert minimum_all_machines(test_data) == 7
 with open("../input_data/10_Factory.txt", "r", encoding="utf-8") as file:
     input_data = file.read().strip()
 
-# answer_1 = minimum_all_machines(input_data)
-# print(answer_1)
+answer_1 = minimum_all_machines(input_data)
+print(answer_1)
 
 # Part 2
 
@@ -195,10 +253,13 @@ assert test_machine_1.sort_equations() == [
     [0, 0, 0, 0, 1, 1, 3],
 ]
 
-print(test_machine_1.reduced_row_echelon())
-print(test_machine_1.find_free_variables())
-# assert test_machine_1.minimum_joltage_presses() == 10
-# assert test_machine_2.minimum_joltage_presses() == 11
+test_machine_1.reduced_row_echelon()
+free_1 = test_machine_1.find_free_variables()
+ranges_1 = test_machine_1.range_for_free(free_1)
+test_machine_1.find_solutions(free_1, ranges_1)
+
+assert test_machine_1.minimum_joltage_presses() == 10
+assert test_machine_2.minimum_joltage_presses() == 11
 
 
 def minimum_joltage_all_machines(data, debug=False):
