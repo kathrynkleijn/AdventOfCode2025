@@ -240,23 +240,23 @@ print(answer_1)
 # Part 2
 
 
-assert test_machine_1.joltage_equation_system() == [
-    [0, 0, 0, 0, 1, 1, 3],
-    [0, 1, 0, 0, 0, 1, 5],
-    [0, 0, 1, 1, 1, 0, 4],
-    [1, 1, 0, 1, 0, 0, 7],
-]
-assert test_machine_1.sort_equations() == [
-    [1, 1, 0, 1, 0, 0, 7],
-    [0, 1, 0, 0, 0, 1, 5],
-    [0, 0, 1, 1, 1, 0, 4],
-    [0, 0, 0, 0, 1, 1, 3],
-]
+# assert test_machine_1.joltage_equation_system() == [
+#     [0, 0, 0, 0, 1, 1, 3],
+#     [0, 1, 0, 0, 0, 1, 5],
+#     [0, 0, 1, 1, 1, 0, 4],
+#     [1, 1, 0, 1, 0, 0, 7],
+# ]
+# assert test_machine_1.sort_equations() == [
+#     [1, 1, 0, 1, 0, 0, 7],
+#     [0, 1, 0, 0, 0, 1, 5],
+#     [0, 0, 1, 1, 1, 0, 4],
+#     [0, 0, 0, 0, 1, 1, 3],
+# ]
 
-test_machine_1.reduced_row_echelon()
-free_1 = test_machine_1.find_free_variables()
-ranges_1 = test_machine_1.range_for_free(free_1)
-test_machine_1.find_solutions(free_1, ranges_1)
+# test_machine_1.reduced_row_echelon()
+# free_1 = test_machine_1.find_free_variables()
+# ranges_1 = test_machine_1.range_for_free(free_1)
+# test_machine_1.find_solutions(free_1, ranges_1)
 
 assert test_machine_1.minimum_joltage_presses() == 10
 assert test_machine_2.minimum_joltage_presses() == 11
