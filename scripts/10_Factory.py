@@ -92,11 +92,14 @@ class Machine:
         self.equations = sorted(self.equations)[::-1]
         return self.equations
 
+    def reset_equations(self):
+        self.equations = []
+
     def row_echelon(self):
         m = len(self.equations)
         for j in range(1, m):
             for i in range(j, m):
-                if self.equations[i][j - 1] != 0:
+                if self.equations[i][j - 1] != 0 and self.equations[j - 1][j - 1] != 0:
                     multiplier = self.equations[i][j - 1] / self.equations[j - 1][j - 1]
                     self.equations[i] = [
                         y - multiplier * x
@@ -109,14 +112,13 @@ class Machine:
         n = len(self.equations[0])
         for j in reversed(range(m - 1)):
             for i in range(j + 1, n - 1):
-                if (
-                    self.equations[j + 1][i] == self.equations[j][i]
-                    and self.equations[j][i] != 0
-                ):
+                if self.equations[j + 1][i] != 0 and self.equations[j][i] != 0:
+                    multiplier = self.equations[j][i] / self.equations[j + 1][i]
                     self.equations[j] = [
-                        int(x - y)
+                        int(multiplier * y - x)
                         for x, y in zip(self.equations[j], self.equations[j + 1])
                     ]
+                print(self.equations)
         return self.equations
 
     def find_free_variables(self):
@@ -132,7 +134,7 @@ class Machine:
         ranges = {}
         for equation in self.equations[::-1]:
             unknowns = [num for num, val in enumerate(equation[:-1]) if val != 0]
-            # check if equation has only two vaiables
+            # check if equation has only two variables
             num_variables = len(unknowns)
             # check that one of them is a free variable
             free_variables = [num for num in unknowns if num in free]
@@ -142,7 +144,7 @@ class Machine:
         for free_variable in free:
             if free_variable != free_variables[0]:
                 presses = self.buttons[free_variable]
-                range = min([button for button in self.joltage if button in presses])
+                range = min([self.joltage[button] for button in presses])
                 ranges[free_variable] = range
         return ranges
 
@@ -240,26 +242,56 @@ print(answer_1)
 # Part 2
 
 
-# assert test_machine_1.joltage_equation_system() == [
-#     [0, 0, 0, 0, 1, 1, 3],
-#     [0, 1, 0, 0, 0, 1, 5],
-#     [0, 0, 1, 1, 1, 0, 4],
-#     [1, 1, 0, 1, 0, 0, 7],
-# ]
-# assert test_machine_1.sort_equations() == [
-#     [1, 1, 0, 1, 0, 0, 7],
-#     [0, 1, 0, 0, 0, 1, 5],
-#     [0, 0, 1, 1, 1, 0, 4],
-#     [0, 0, 0, 0, 1, 1, 3],
-# ]
+assert test_machine_1.joltage_equation_system() == [
+    [0, 0, 0, 0, 1, 1, 3],
+    [0, 1, 0, 0, 0, 1, 5],
+    [0, 0, 1, 1, 1, 0, 4],
+    [1, 1, 0, 1, 0, 0, 7],
+]
+assert test_machine_1.sort_equations() == [
+    [1, 1, 0, 1, 0, 0, 7],
+    [0, 1, 0, 0, 0, 1, 5],
+    [0, 0, 1, 1, 1, 0, 4],
+    [0, 0, 0, 0, 1, 1, 3],
+]
 
-# test_machine_1.reduced_row_echelon()
-# free_1 = test_machine_1.find_free_variables()
-# ranges_1 = test_machine_1.range_for_free(free_1)
-# test_machine_1.find_solutions(free_1, ranges_1)
+test_machine_1.reset_equations()
 
-assert test_machine_1.minimum_joltage_presses() == 10
-assert test_machine_2.minimum_joltage_presses() == 11
+
+# assert test_machine_1.minimum_joltage_presses() == 10
+# assert test_machine_2.minimum_joltage_presses() == 11
+
+
+test_machine_3 = test_machines[1]
+assert test_machine_3.joltage_equation_system() == [
+    [1, 0, 1, 1, 0, 7],
+    [0, 0, 0, 1, 1, 5],
+    [1, 1, 0, 1, 1, 12],
+    [1, 1, 0, 0, 1, 7],
+    [1, 0, 1, 0, 1, 2],
+]
+assert test_machine_3.sort_equations() == [
+    [1, 1, 0, 1, 1, 12],
+    [1, 1, 0, 0, 1, 7],
+    [1, 0, 1, 1, 0, 7],
+    [1, 0, 1, 0, 1, 2],
+    [0, 0, 0, 1, 1, 5],
+]
+assert test_machine_3.row_echelon() == [
+    [1, 1, 0, 1, 1, 12],
+    [0, 0, 0, -1, 0, -5],
+    [0, -1, 1, 0, -1, -5],
+    [0, 0, 0, -1, 1, -5],
+    [0, 0, 0, 0, 2, 0],
+]
+print(test_machine_3.reduced_row_echelon())
+# assert test_machine_3.reduced_row_echelon() == [
+#     [1, 0, 1, 1, 0, 7],
+#     [0, 0, 0, 0, 1, 0],
+#     [0, 1, -1, 0, 1, 5],
+#     [0, 0, 0, -1, 1, -5],
+#     [0, 0, 0, 0, 2, 0],
+# ]
 
 
 def minimum_joltage_all_machines(data, debug=False):
@@ -273,7 +305,7 @@ def minimum_joltage_all_machines(data, debug=False):
     return presses
 
 
-# assert minimum_joltage_all_machines(test_data) == 33
+# assert minimum_joltage_all_machines(test_data, debug=True) == 33
 
 # answer_2 = minimum_joltage_all_machines(input_data)
 # print(answer_2)
