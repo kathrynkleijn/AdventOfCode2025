@@ -258,10 +258,13 @@ class Machine:
 
     def minimum_joltage_presses(self):
         self.joltage_equation_system()
+        print(f"Equations: {self.equations}")
         self.sort_equations()
         self.row_echelon()
         self.reduced_row_echelon()
+        print(f"Reduced = {self.equations}")
         free = self.find_free_variables()
+        print(f"{free=}")
         ranges = self.range_for_free(free)
         return self.find_solutions(free, ranges)
 
@@ -324,7 +327,6 @@ test_machine_1.reset_equations()
 assert test_machine_1.minimum_joltage_presses() == 10
 assert test_machine_2.minimum_joltage_presses() == 11
 
-
 test_machine_3 = test_machines[1]
 assert test_machine_3.joltage_equation_system() == [
     [1, 0, 1, 1, 0, 7],
@@ -367,15 +369,26 @@ assert test_machine_3.minimum_joltage_presses() == 12
 def minimum_joltage_all_machines(data, debug=False):
     machines = parse_data(data)
     presses = 0
-    for machine in machines:
-        if debug:
-            min_presses = machine.minimum_joltage_presses()
-            print(f"{machine.indicator=},{min_presses=}")
-        presses += machine.minimum_joltage_presses()
+
+    if debug:
+        for num, machine in enumerate(machines):
+            if num > 1:
+                print(f"\n\nChecking machine {num+1}")
+                min_presses = machine.minimum_joltage_presses()
+                if min_presses == 1e10:
+                    print("No solution found")
+                    break
+                print(f"{machine.indicator=},{min_presses=}")
+    else:
+        for machine in machines:
+            presses += machine.minimum_joltage_presses()
     return presses
 
 
-assert minimum_joltage_all_machines(test_data, debug=True) == 33
+assert minimum_joltage_all_machines(test_data, debug=False) == 33
 
-# answer_2 = minimum_joltage_all_machines(input_data)
-# print(answer_2)
+
+answer_2 = minimum_joltage_all_machines(input_data, debug=True)
+print(answer_2)
+
+# machines 1 and 2 not working. Machine 3 incorrect.
