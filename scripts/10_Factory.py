@@ -1,6 +1,6 @@
 ## Day 10: Factory
 
-from itertools import combinations_with_replacement, product
+from itertools import combinations_with_replacement, product, groupby
 from collections import Counter
 import math
 
@@ -87,6 +87,8 @@ class Machine:
                     equation[num] = 1
             equation.append(self.joltage[button])
             self.equations.append(equation)
+        self.sort_equations()
+        self.equations = list(k for k, _ in groupby(self.equations))
         return self.equations
 
     def sort_equations(self):
@@ -256,15 +258,18 @@ class Machine:
 
         return total_presses
 
-    def minimum_joltage_presses(self):
+    def minimum_joltage_presses(self, debug=False):
         self.joltage_equation_system()
-        print(f"Equations: {self.equations}")
-        self.sort_equations()
+        if debug:
+            print(f"Equations: {self.equations}")
         self.row_echelon()
+        if debug:
+            print(f"Echelon = {self.equations}")
         self.reduced_row_echelon()
-        print(f"Reduced = {self.equations}")
+        if debug:
+            print(f"Reduced = {self.equations}")
         free = self.find_free_variables()
-        print(f"{free=}")
+        # print(f"{free=}")
         ranges = self.range_for_free(free)
         return self.find_solutions(free, ranges)
 
@@ -304,12 +309,6 @@ print(answer_1)
 
 
 assert test_machine_1.joltage_equation_system() == [
-    [0, 0, 0, 0, 1, 1, 3],
-    [0, 1, 0, 0, 0, 1, 5],
-    [0, 0, 1, 1, 1, 0, 4],
-    [1, 1, 0, 1, 0, 0, 7],
-]
-assert test_machine_1.sort_equations() == [
     [1, 1, 0, 1, 0, 0, 7],
     [0, 1, 0, 0, 0, 1, 5],
     [0, 0, 1, 1, 1, 0, 4],
@@ -329,13 +328,6 @@ assert test_machine_2.minimum_joltage_presses() == 11
 
 test_machine_3 = test_machines[1]
 assert test_machine_3.joltage_equation_system() == [
-    [1, 0, 1, 1, 0, 7],
-    [0, 0, 0, 1, 1, 5],
-    [1, 1, 0, 1, 1, 12],
-    [1, 1, 0, 0, 1, 7],
-    [1, 0, 1, 0, 1, 2],
-]
-assert test_machine_3.sort_equations() == [
     [1, 1, 0, 1, 1, 12],
     [1, 1, 0, 0, 1, 7],
     [1, 0, 1, 1, 0, 7],
@@ -372,7 +364,7 @@ def minimum_joltage_all_machines(data, debug=False):
 
     if debug:
         for num, machine in enumerate(machines):
-            if num > 1:
+            if num > 13:
                 print(f"\n\nChecking machine {num+1}")
                 min_presses = machine.minimum_joltage_presses()
                 if min_presses == 1e10:
@@ -387,8 +379,11 @@ def minimum_joltage_all_machines(data, debug=False):
 
 assert minimum_joltage_all_machines(test_data, debug=False) == 33
 
+# test_machine_4 = parse_data("[.#.#.] (0,2,3,4) (1,3) (0,2) (1,4) {1,27,1,7,20}")[0]
+# print(test_machine_4.minimum_joltage_presses(debug=True))
+
 
 answer_2 = minimum_joltage_all_machines(input_data, debug=True)
 print(answer_2)
 
-# machines 1 and 2 not working. Machine 3 incorrect.
+# machines 1,2,5,11,14 not working. 15 incorrect.
