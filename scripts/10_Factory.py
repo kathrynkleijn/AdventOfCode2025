@@ -1,7 +1,8 @@
 ## Day 10: Factory
 
-from itertools import combinations_with_replacement
+from itertools import combinations_with_replacement, product
 from collections import Counter
+import math
 
 # Part 1
 
@@ -105,103 +106,160 @@ class Machine:
                         y - multiplier * x
                         for x, y in zip(self.equations[j - 1], self.equations[i])
                     ]
-        return self.equations
+        self.make_positive()
+        return self.sort_equations()
 
     def reduced_row_echelon(self):
+        self.equations = [
+            equation for equation in self.equations if equation != [0] * len(equation)
+        ]
         m = len(self.equations)
-        n = len(self.equations[0])
-        for j in reversed(range(m - 1)):
-            for i in range(j + 1, n - 1):
-                if self.equations[j + 1][i] != 0 and self.equations[j][i] != 0:
-                    multiplier = self.equations[j][i] / self.equations[j + 1][i]
-                    self.equations[j] = [
-                        int(multiplier * y - x)
-                        for x, y in zip(self.equations[j], self.equations[j + 1])
-                    ]
-                print(self.equations)
-        return self.equations
+        n = next(index for index, val in enumerate(self.equations[-1]) if val != 0)
+        for j in reversed(range(m)):
+            for k in range(j):
+                for i in range(j, n + 1):
+                    if self.equations[j - k - 1][i] != 0 and self.equations[j][i] != 0:
+                        multiplier = self.equations[j - k - 1][i] / self.equations[j][i]
+                        self.equations[j - k - 1] = [
+                            int(multiplier * y - x)
+                            for x, y in zip(
+                                self.equations[j - k - 1], self.equations[j]
+                            )
+                        ]
+        self.make_positive()
+        return self.sort_equations()
+
+    def make_positive(self):
+        for num, equation in enumerate(self.equations):
+            if any([val < 0 for val in equation]):
+                if next(val for val in equation if val) < 0:
+                    self.equations[num] = [int(val) * -1 for val in equation]
 
     def find_free_variables(self):
         free = []
         n = len(self.equations[0])
         for j in range(n - 1):
             col = [x[j] for x in self.equations]
-            if Counter(col)[1] > 1:
+            if Counter(col)[1] + Counter(col)[-1] > 1:
                 free.append(j)
         return free
 
     def range_for_free(self, free):
         ranges = {}
         for equation in self.equations[::-1]:
-            unknowns = [num for num, val in enumerate(equation[:-1]) if val != 0]
+            unknowns = [(num, val) for num, val in enumerate(equation[:-1]) if val != 0]
             # check if equation has only two variables
             num_variables = len(unknowns)
             # check that one of them is a free variable
-            free_variables = [num for num in unknowns if num in free]
+            free_variables = [num for num, _ in unknowns if num in free]
             if num_variables == 2 and free_variables:
-                ranges[free_variables[0]] = equation[-1]
-                break
+                # check that this is a positive sum to produce a greater than
+                if all([val > 0 for _, val in unknowns]) or all(
+                    [val < 0 for _, val in unknowns]
+                ):
+                    divisor = equation[free_variables[0]]
+                    if free_variables[0] in ranges:
+                        if ranges[free_variables[0]][1] == 0:
+                            ranges[free_variables[0]] = [
+                                ranges[free_variables[0]][0],
+                                math.ceil(equation[-1] / divisor),
+                            ]
+                        elif (
+                            math.ceil(equation[-1] / divisor)
+                            < ranges[free_variables[0]][1]
+                        ):
+                            ranges[free_variables[0]] = [
+                                ranges[free_variables[0]][0],
+                                math.ceil(equation[-1] / divisor),
+                            ]
+                    else:
+                        ranges[free_variables[0]] = [
+                            0,
+                            math.ceil(equation[-1] / divisor),
+                        ]
+                # if there's a minimum
+                else:
+                    divisor = equation[free_variables[0]]
+                    if free_variables[0] in ranges:
+                        if ranges[free_variables[0]][0] == 0:
+                            ranges[free_variables[0]] = [
+                                math.ceil(equation[-1] / divisor),
+                                ranges[free_variables[0]][1],
+                            ]
+                        elif (
+                            math.ceil(equation[-1] / divisor)
+                            > ranges[free_variables[0]][0]
+                        ):
+                            ranges[free_variables[0]] = [
+                                math.ceil(equation[-1] / divisor),
+                                ranges[free_variables[0]][1],
+                            ]
+                    else:
+                        ranges[free_variables[0]] = [
+                            math.ceil(equation[-1] / divisor),
+                            0,
+                        ]
         for free_variable in free:
-            if free_variable != free_variables[0]:
+            if free_variables and free_variable != free_variables[0]:
                 presses = self.buttons[free_variable]
                 range = min([self.joltage[button] for button in presses])
-                ranges[free_variable] = range
+                ranges[free_variable] = [0, int(range)]
         return ranges
 
     def find_solutions(self, free, ranges):
         total_presses = 1e10
-        for i in range(ranges[free[0]] + 1):
-            for j in range(ranges[free[1]] + 1):
-                partial_solution = [None] * (len(self.equations[0]) - 1)
-                partial_solution[free[0]] = i
-                partial_solution[free[1]] = j
-                check_equations = self.equations[::-1].copy()
-                not_solved = []
-                solved_variable = False
-                for num, equation in enumerate(check_equations):
-                    equation_solution = [
-                        x * y
-                        for x, y in zip(equation[:-1], partial_solution)
-                        if y is not None
-                    ]
-                    unknowns = [
-                        (num, x)
-                        for num, x in enumerate(equation[:-1])
-                        if partial_solution[num] == None and x != 0
-                    ]
-                    if len(unknowns) == 0:
-                        if sum(equation_solution) != equation[-1]:
-                            break
-                        else:
-                            continue
-                    if len(unknowns) == 1:
-                        solution = (equation[-1] - sum(equation_solution)) / unknowns[
-                            0
-                        ][1]
-                        if solution >= 0:
-                            variable = unknowns[0][0]
-                            partial_solution[variable] = int(solution)
-                            solved_variable = True
+        for indices in product(
+            *(range(val[0], val[1] + 1) for _, val in ranges.items())
+        ):
+            partial_solution = [None] * (len(self.equations[0]) - 1)
+            for i in range(len(indices)):
+                partial_solution[free[i]] = indices[i]
+            check_equations = self.equations[::-1].copy()
+            not_solved = []
+            solved_variable = False
+            for num, equation in enumerate(check_equations):
+                equation_solution = [
+                    x * y
+                    for x, y in zip(equation[:-1], partial_solution)
+                    if y is not None
+                ]
+                unknowns = [
+                    (num, x)
+                    for num, x in enumerate(equation[:-1])
+                    if partial_solution[num] == None and x != 0
+                ]
+                if len(unknowns) == 0:
+                    if sum(equation_solution) != equation[-1]:
+                        break
                     else:
-                        not_solved.append(num)
-                if solved_variable:
-                    if len(not_solved) > 0:
-                        check_equations = [
-                            equation
-                            for num, equation in enumerate(self.equations[::-1])
-                            if num in not_solved
-                        ]
-                    elif None not in partial_solution:
-                        if sum(partial_solution) < total_presses:
-                            total_presses = sum(partial_solution)
-                if not solved_variable and len(not_solved) > 0:
-                    continue
+                        continue
+                if len(unknowns) == 1:
+                    solution = (equation[-1] - sum(equation_solution)) / unknowns[0][1]
+                    if solution >= 0:
+                        variable = unknowns[0][0]
+                        partial_solution[variable] = int(solution)
+                        solved_variable = True
+                else:
+                    not_solved.append(num)
+            if solved_variable:
+                if len(not_solved) > 0:
+                    check_equations = [
+                        equation
+                        for num, equation in enumerate(self.equations[::-1])
+                        if num in not_solved
+                    ]
+                elif None not in partial_solution:
+                    if sum(partial_solution) < total_presses:
+                        total_presses = sum(partial_solution)
+            if not solved_variable and len(not_solved) > 0:
+                continue
 
         return total_presses
 
     def minimum_joltage_presses(self):
         self.joltage_equation_system()
         self.sort_equations()
+        self.row_echelon()
         self.reduced_row_echelon()
         free = self.find_free_variables()
         ranges = self.range_for_free(free)
@@ -254,12 +312,17 @@ assert test_machine_1.sort_equations() == [
     [0, 0, 1, 1, 1, 0, 4],
     [0, 0, 0, 0, 1, 1, 3],
 ]
+assert test_machine_1.row_echelon() == [
+    [1, 1, 0, 1, 0, 0, 7],
+    [0, 1, 0, 0, 0, 1, 5],
+    [0, 0, 1, 1, 1, 0, 4],
+    [0, 0, 0, 0, 1, 1, 3],
+]
 
 test_machine_1.reset_equations()
 
-
-# assert test_machine_1.minimum_joltage_presses() == 10
-# assert test_machine_2.minimum_joltage_presses() == 11
+assert test_machine_1.minimum_joltage_presses() == 10
+assert test_machine_2.minimum_joltage_presses() == 11
 
 
 test_machine_3 = test_machines[1]
@@ -279,19 +342,26 @@ assert test_machine_3.sort_equations() == [
 ]
 assert test_machine_3.row_echelon() == [
     [1, 1, 0, 1, 1, 12],
-    [0, 0, 0, -1, 0, -5],
-    [0, -1, 1, 0, -1, -5],
-    [0, 0, 0, -1, 1, -5],
+    [0, 1, -1, 0, 1, 5],
+    [0, 0, 0, 1, 0, 5],
+    [0, 0, 0, 1, -1, 5],
     [0, 0, 0, 0, 2, 0],
 ]
-print(test_machine_3.reduced_row_echelon())
-# assert test_machine_3.reduced_row_echelon() == [
-#     [1, 0, 1, 1, 0, 7],
-#     [0, 0, 0, 0, 1, 0],
-#     [0, 1, -1, 0, 1, 5],
-#     [0, 0, 0, -1, 1, -5],
-#     [0, 0, 0, 0, 2, 0],
-# ]
+assert test_machine_3.reduced_row_echelon() == [
+    [1, 1, 0, 0, 0, 7],
+    [0, 1, -1, 0, 0, 5],
+    [0, 0, 0, 1, 0, 5],
+    [0, 0, 0, 0, 2, 0],
+    [0, 0, 0, 0, 0, 0],
+]
+
+free3 = test_machine_3.find_free_variables()
+ranges3 = test_machine_3.range_for_free(free3)
+assert test_machine_3.find_solutions(free3, ranges3) == 12
+
+test_machine_3.reset_equations()
+
+assert test_machine_3.minimum_joltage_presses() == 12
 
 
 def minimum_joltage_all_machines(data, debug=False):
@@ -305,7 +375,7 @@ def minimum_joltage_all_machines(data, debug=False):
     return presses
 
 
-# assert minimum_joltage_all_machines(test_data, debug=True) == 33
+assert minimum_joltage_all_machines(test_data, debug=True) == 33
 
 # answer_2 = minimum_joltage_all_machines(input_data)
 # print(answer_2)
