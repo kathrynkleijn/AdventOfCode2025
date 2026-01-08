@@ -120,9 +120,10 @@ class Machine:
                     # print(self.equations[i], self.equations[j - 1])
                     multiplier = self.equations[i][j - 1] / self.equations[j - 1][j - 1]
                     if multiplier % 1 != 0:
-                        multiplier = 1 / multiplier
+                        multi_x = self.equations[i][j - 1]
+                        multi_y = self.equations[j - 1][j - 1]
                         self.equations[i] = [
-                            multiplier * y - x
+                            multi_y * y - multi_x * x
                             for x, y in zip(self.equations[j - 1], self.equations[i])
                         ]
                     else:
@@ -131,6 +132,7 @@ class Machine:
                             for x, y in zip(self.equations[j - 1], self.equations[i])
                         ]
                     # if any([val % 1 != 0 for val in self.equations[i]]):
+
                     #     self.equations[i] = [
                     #         val / multiplier for val in self.equations[i]
                     #     ]
@@ -455,12 +457,12 @@ print(test_machine_7.minimum_joltage_presses())
 test_machine_8 = parse_data(
     "[.#..#.#] (2,6) (2,3,5,6) (0,1,2,3,4,5) (0,1,6) (0,5) (0,3,4,5,6) (1,3,4) {48,51,46,56,47,41,56}"
 )[0]
-print(test_machine_8.minimum_joltage_presses(debug=True))
+print(test_machine_8.minimum_joltage_presses())
 
 
-# answer_2 = minimum_joltage_all_machines(input_data, debug=True)
-# print(answer_2)
+answer_2 = minimum_joltage_all_machines(input_data, debug=True)
+print(answer_2)
 
 
-# slow: 14,46,123,144,157,177
-# incorrect: 54,64,68,71,72,79,92,96,108,110,119,124,136,146,159,173
+# slow: 14,123,144,157,177
+# incorrect: 68,71,72,79,92,110,119,124,136,146,166,173
