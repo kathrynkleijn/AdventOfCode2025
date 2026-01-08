@@ -120,12 +120,27 @@ class Machine:
                     # print(self.equations[i], self.equations[j - 1])
                     multiplier = self.equations[i][j - 1] / self.equations[j - 1][j - 1]
                     if multiplier % 1 != 0:
-                        multi_x = self.equations[i][j - 1]
-                        multi_y = self.equations[j - 1][j - 1]
-                        self.equations[i] = [
-                            multi_y * y - multi_x * x
-                            for x, y in zip(self.equations[j - 1], self.equations[i])
-                        ]
+                        if abs(multiplier) < 0:
+                            multiplier = 1 / multiplier
+                            self.equations[i] = [
+                                multiplier * y - x
+                                for x, y in zip(
+                                    self.equations[j - 1], self.equations[i]
+                                )
+                            ]
+                        else:
+                            hcf = math.gcd(
+                                int(self.equations[i][j - 1]),
+                                int(self.equations[j - 1][j - 1]),
+                            )
+                            multi_x = self.equations[i][j - 1] / hcf
+                            multi_y = self.equations[j - 1][j - 1] / hcf
+                            self.equations[i] = [
+                                multi_y * y - multi_x * x
+                                for x, y in zip(
+                                    self.equations[j - 1], self.equations[i]
+                                )
+                            ]
                     else:
                         self.equations[i] = [
                             y - multiplier * x
@@ -158,13 +173,27 @@ class Machine:
                         update = True
                         multiplier = self.equations[j - k - 1][i] / self.equations[j][i]
                         if multiplier % 1 != 0:
-                            multiplier = 1 / multiplier
-                            self.equations[j - k - 1] = [
-                                y - multiplier * x
-                                for x, y in zip(
-                                    self.equations[j - k - 1], self.equations[j]
+                            if abs(multiplier) < 0:
+                                multiplier = 1 / multiplier
+                                self.equations[j - k - 1] = [
+                                    y - multiplier * x
+                                    for x, y in zip(
+                                        self.equations[j - k - 1], self.equations[j]
+                                    )
+                                ]
+                            else:
+                                hcf = math.gcd(
+                                    int(self.equations[j - k - 1][i]),
+                                    int(self.equations[j][i]),
                                 )
-                            ]
+                                multi_x = self.equations[j][i] / hcf
+                                multi_y = self.equations[j - k - 1][i] / hcf
+                                self.equations[j - k - 1] = [
+                                    multi_y * y - multi_x * x
+                                    for x, y in zip(
+                                        self.equations[j - k - 1], self.equations[j]
+                                    )
+                                ]
                         else:
                             self.equations[j - k - 1] = [
                                 multiplier * y - x
@@ -206,12 +235,6 @@ class Machine:
             # check that one of them is a free variable
             free_variables = [num for num, _ in unknowns if num in free]
             if num_variables == 1 and free_variables:
-                # if variable is actually fixed by an equation
-                # divisor = equation[free_variables[0]]
-                # ranges[free_variables[0]] = [
-                #     math.ceil(equation[-1] / divisor),
-                #     math.ceil(equation[-1] / divisor),
-                # ]
                 free.remove(free_variables[0])
             if num_variables == 2 and free_variables:
                 # check that this is a positive sum to produce a greater than
@@ -459,10 +482,14 @@ test_machine_8 = parse_data(
 )[0]
 print(test_machine_8.minimum_joltage_presses())
 
+test_machine_9 = parse_data(
+    "[###..#####] (1,2,4,5,6,7,8) (0,1,2,5,6,7,8,9) (2,4) (0,4,6,8) (2,3,4,6,9) (1,3,4,5,6,7,8,9) (0,1,2,3,6,7,9) (2,4,5,6,7) {23,34,192,173,193,28,192,41,26,178}"
+)[0]
+print(test_machine_9.minimum_joltage_presses())
 
 answer_2 = minimum_joltage_all_machines(input_data, debug=True)
 print(answer_2)
 
 
 # slow: 14,123,144,157,177
-# incorrect: 68,71,72,79,92,110,119,124,136,146,166,173
+# incorrect: 72,79,92,136,146,173
