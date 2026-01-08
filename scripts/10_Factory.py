@@ -205,11 +205,12 @@ class Machine:
             free_variables = [num for num, _ in unknowns if num in free]
             if num_variables == 1 and free_variables:
                 # if variable is actually fixed by an equation
-                divisor = equation[free_variables[0]]
-                ranges[free_variables[0]] = [
-                    math.ceil(equation[-1] / divisor),
-                    math.ceil(equation[-1] / divisor),
-                ]
+                # divisor = equation[free_variables[0]]
+                # ranges[free_variables[0]] = [
+                #     math.ceil(equation[-1] / divisor),
+                #     math.ceil(equation[-1] / divisor),
+                # ]
+                free.remove(free_variables[0])
             if num_variables == 2 and free_variables:
                 # check that this is a positive sum to produce a greater than
                 if all([val > 0 for _, val in unknowns]) or all(
@@ -270,7 +271,8 @@ class Machine:
         for key, val in ranges.items():
             if val[0] < 0:
                 ranges[key] = [0, val[1]]
-        return ranges
+        ranges = {key: val for key, val in ranges.items() if key in free}
+        return ranges, free
 
     def find_solutions(self, free, ranges):
         total_presses = 1e10
@@ -339,7 +341,7 @@ class Machine:
                 f"Reduced = {"\n".join(str(equation) for equation in self.equations)}"
             )
         free = self.find_free_variables()
-        ranges = self.range_for_free(free)
+        ranges, free = self.range_for_free(free)
         if debug:
             print(f"{ranges=}")
         return self.find_solutions(free, ranges)
@@ -416,12 +418,12 @@ def minimum_joltage_all_machines(data, debug=False):
     presses = 0
     if debug:
         for num, machine in enumerate(machines):
-            if num > 0:
+            if num > 176:
                 print(f"\n\nChecking machine {num+1}")
                 min_presses = machine.minimum_joltage_presses()
                 if min_presses == 1e10:
                     print("No solution found")
-                    break
+                    # break
                 else:
                     print(f"{machine.indicator=},{min_presses=}")
     else:
@@ -433,22 +435,32 @@ def minimum_joltage_all_machines(data, debug=False):
 assert minimum_joltage_all_machines(test_data, debug=False) == 33
 
 test_machine_4 = parse_data("[.#.#.] (0,2,3,4) (1,3) (0,2) (1,4) {1,27,1,7,20}")[0]
-print(test_machine_4.minimum_joltage_presses(debug=False))
+print(test_machine_4.minimum_joltage_presses())
 
 test_machine_5 = parse_data(
     "[.....#.#.] (3,4) (1,4) (0,2,3,5,6,8) (1,4,5,7) (0,3,4,6,7,8) (0,1,2,3,5,8) (2,4,5) (2,5) (2,3,5,8) (6) {24,29,22,43,58,28,19,16,24}"
 )[0]
-print(test_machine_5.minimum_joltage_presses(debug=False))
+print(test_machine_5.minimum_joltage_presses())
 
 test_machine_6 = parse_data(
     "[##......#.] (1,3,5,6,7,8) (1,2,6,7) (0,6) (0,3,4,5,6,8) (4,9) (0,1,2,3,4,5,6,7,8) (0,3,4,6,8,9) (1,4,6,7) (0,4) (1,2,4,5,8) (1,2,5) {38,41,30,18,50,30,44,27,31,4}"
 )[0]
-print(test_machine_6.minimum_joltage_presses(debug=False))
+print(test_machine_6.minimum_joltage_presses())
+
+test_machine_7 = parse_data(
+    "[##....] (0,1,2,3,5) (0,1,2,4) (2,4) (1,3) (0,1,3) {26,42,18,40,7,11}"
+)[0]
+print(test_machine_7.minimum_joltage_presses())
+
+test_machine_8 = parse_data(
+    "[.#..#.#] (2,6) (2,3,5,6) (0,1,2,3,4,5) (0,1,6) (0,5) (0,3,4,5,6) (1,3,4) {48,51,46,56,47,41,56}"
+)[0]
+print(test_machine_8.minimum_joltage_presses(debug=True))
 
 
-answer_2 = minimum_joltage_all_machines(input_data, debug=True)
-print(answer_2)
+# answer_2 = minimum_joltage_all_machines(input_data, debug=True)
+# print(answer_2)
 
 
 # slow: 14,46,123,144,157,177
-# incorrect: 52,54,64,68,71,72,76,79,92,96,108,110,119,124,136,146,159,173
+# incorrect: 54,64,68,71,72,79,92,96,108,110,119,124,136,146,159,173
