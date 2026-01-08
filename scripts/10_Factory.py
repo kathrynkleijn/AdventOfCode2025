@@ -487,8 +487,13 @@ test_machine_9 = parse_data(
 )[0]
 print(test_machine_9.minimum_joltage_presses())
 
-answer_2 = minimum_joltage_all_machines(input_data, debug=True)
-print(answer_2)
+test_machine_10 = parse_data(
+    "[..###.#..] (0,2,5,7) (0,1,3,5,6) (4) (1,8) (0,1,4,6,7,8) (0,2,3,6) (0,1,2,6,7,8) (0,1,2,5,6,7) (1,5,7,8) {36,67,25,6,25,27,31,48,63}"
+)[0]
+print(test_machine_10.minimum_joltage_presses(debug=True))
+
+# answer_2 = minimum_joltage_all_machines(input_data, debug=True)
+# print(answer_2)
 
 
 # slow: 14,123,144,157,177
