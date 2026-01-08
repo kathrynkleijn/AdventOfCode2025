@@ -150,19 +150,31 @@ class Machine:
         n = next(index for index, val in enumerate(self.equations[-1]) if val != 0)
         for j in reversed(range(m)):
             for k in range(j):
+                update = False
                 for i in range(j, n + 1):
                     if self.equations[j - k - 1][i] != 0 and self.equations[j][i] != 0:
+                        update = True
                         multiplier = self.equations[j - k - 1][i] / self.equations[j][i]
-                        self.equations[j - k - 1] = [
-                            multiplier * y - x
-                            for x, y in zip(
-                                self.equations[j - k - 1], self.equations[j]
-                            )
-                        ]
-                        if any([val % 1 != 0 for val in self.equations[j - k - 1]]):
+                        if multiplier % 1 != 0:
+                            multiplier = 1 / multiplier
                             self.equations[j - k - 1] = [
-                                val / multiplier for val in self.equations[j - k - 1]
+                                y - multiplier * x
+                                for x, y in zip(
+                                    self.equations[j - k - 1], self.equations[j]
+                                )
                             ]
+                        else:
+                            self.equations[j - k - 1] = [
+                                multiplier * y - x
+                                for x, y in zip(
+                                    self.equations[j - k - 1], self.equations[j]
+                                )
+                            ]
+                        # print("\n")
+                        # print("\n".join(str(equation) for equation in self.equations))
+                        if update:
+                            break
+            self.make_positive()
         self.make_positive()
         return self.sort_equations()
 
@@ -178,7 +190,8 @@ class Machine:
         n = len(self.equations[0])
         for j in range(n - 1):
             col = [x[j] for x in self.equations]
-            if Counter(col)[1] + Counter(col)[-1] > 1:
+            counter = Counter(col)
+            if sum([counter[val] for val in set(col) if val != 0]) > 1:
                 free.append(j)
         return free
 
@@ -190,6 +203,13 @@ class Machine:
             num_variables = len(unknowns)
             # check that one of them is a free variable
             free_variables = [num for num, _ in unknowns if num in free]
+            if num_variables == 1 and free_variables:
+                # if variable is actually fixed by an equation
+                divisor = equation[free_variables[0]]
+                ranges[free_variables[0]] = [
+                    math.ceil(equation[-1] / divisor),
+                    math.ceil(equation[-1] / divisor),
+                ]
             if num_variables == 2 and free_variables:
                 # check that this is a positive sum to produce a greater than
                 if all([val > 0 for _, val in unknowns]) or all(
@@ -385,24 +405,6 @@ assert test_machine_3.joltage_equation_system() == [
     [1, 0, 1, 0, 1, 2],
     [0, 0, 0, 1, 1, 5],
 ]
-# assert test_machine_3.row_echelon() == [
-#     [1, 1, 0, 1, 1, 12],
-#     [0, 1, -1, 0, 1, 5],
-#     [0, 0, 0, 1, 0, 5],
-#     [0, 0, 0, 1, -1, 5],
-#     [0, 0, 0, 0, 2, 0],
-# ]
-# assert test_machine_3.reduced_row_echelon() == [
-#     [1, 1, 0, 0, 0, 7],
-#     [0, 1, -1, 0, 0, 5],
-#     [0, 0, 0, 1, 0, 5],
-#     [0, 0, 0, 0, 2, 0],
-#     [0, 0, 0, 0, 0, 0],
-# ]
-
-# free3 = test_machine_3.find_free_variables()
-# ranges3 = test_machine_3.range_for_free(free3)
-# assert test_machine_3.find_solutions(free3, ranges3) == 12
 
 test_machine_3.reset_equations()
 
@@ -412,15 +414,14 @@ assert test_machine_3.minimum_joltage_presses() == 12
 def minimum_joltage_all_machines(data, debug=False):
     machines = parse_data(data)
     presses = 0
-
     if debug:
         for num, machine in enumerate(machines):
-            if num > 179:
+            if num > 0:
                 print(f"\n\nChecking machine {num+1}")
                 min_presses = machine.minimum_joltage_presses()
                 if min_presses == 1e10:
                     print("No solution found")
-                    # break
+                    break
                 else:
                     print(f"{machine.indicator=},{min_presses=}")
     else:
@@ -443,17 +444,11 @@ test_machine_6 = parse_data(
     "[##......#.] (1,3,5,6,7,8) (1,2,6,7) (0,6) (0,3,4,5,6,8) (4,9) (0,1,2,3,4,5,6,7,8) (0,3,4,6,8,9) (1,4,6,7) (0,4) (1,2,4,5,8) (1,2,5) {38,41,30,18,50,30,44,27,31,4}"
 )[0]
 print(test_machine_6.minimum_joltage_presses(debug=False))
-# reduced row echelon incorrect
 
 
-# answer_2 = minimum_joltage_all_machines(input_data, debug=True)
-# print(answer_2)
+answer_2 = minimum_joltage_all_machines(input_data, debug=True)
+print(answer_2)
 
-# 14,20,29,108,119,122,128
-# 24,102,123 incorrect.
 
-# machines 1,2,5,11,18,19,23,30,110,
-# 117,125,130,
-# 170,172,180,182 not working/very slow. - machine 1 takes all night... - ranges for checking are too large.
-
-# (Checked up to 30, 102-130, 160+)
+# slow: 14,46,123,144,157,177
+# incorrect: 52,54,64,68,71,72,76,79,92,96,108,110,119,124,136,146,159,173
