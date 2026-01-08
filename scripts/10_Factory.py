@@ -101,20 +101,23 @@ class Machine:
     def row_echelon(self):
         m = len(self.equations)
         for j in range(1, m):
-            if not all([val == 0 for val in self.equations[j]]) and not all(
-                [val == 0 for val in self.equations[j - 1]]
-            ):
-                n = next(
-                    index for index, val in enumerate(self.equations[j]) if val != 0
-                )
+            # not all([val == 0 for val in self.equations[j]]) and
+            if not all([val == 0 for val in self.equations[j - 1]]):
+                # n = next(
+                #     index for index, val in enumerate(self.equations[j]) if val != 0
+                # )
                 p = next(
                     index for index, val in enumerate(self.equations[j - 1]) if val != 0
                 )
-                if p > n:
+                if p > j - 1:
                     self.make_positive()
                     self.sort_equations()
+                    # print("sorted")
             for i in range(j, m):
+                # print(f"{j=}")
                 if self.equations[i][j - 1] != 0 and self.equations[j - 1][j - 1] != 0:
+                    # print("\n")
+                    # print(self.equations[i], self.equations[j - 1])
                     multiplier = self.equations[i][j - 1] / self.equations[j - 1][j - 1]
                     if multiplier % 1 != 0:
                         multiplier = 1 / multiplier
@@ -131,7 +134,11 @@ class Machine:
                     #     self.equations[i] = [
                     #         val / multiplier for val in self.equations[i]
                     #     ]
+                    # print(f"{i=},{j=}")
+                    # print("\n".join(str(equation) for equation in self.equations))
         self.make_positive()
+        # print("\n")
+        # print("\n".join(str(equation) for equation in self.sort_equations()))
         return self.sort_equations()
 
     def reduced_row_echelon(self):
@@ -161,6 +168,7 @@ class Machine:
 
     def make_positive(self):
         for num, equation in enumerate(self.equations):
+            self.equations[num] = [int(val) for val in equation]
             if any([val < 0 for val in equation]):
                 if next(val for val in equation if val) < 0:
                     self.equations[num] = [int(val) * -1 for val in equation]
@@ -312,7 +320,8 @@ class Machine:
             )
         free = self.find_free_variables()
         ranges = self.range_for_free(free)
-        print(f"{ranges=}")
+        if debug:
+            print(f"{ranges=}")
         return self.find_solutions(free, ranges)
 
 
@@ -422,17 +431,23 @@ def minimum_joltage_all_machines(data, debug=False):
 
 assert minimum_joltage_all_machines(test_data, debug=False) == 33
 
-# test_machine_4 = parse_data("[.#.#.] (0,2,3,4) (1,3) (0,2) (1,4) {1,27,1,7,20}")[0]
-# print(test_machine_4.minimum_joltage_presses(debug=True))
+test_machine_4 = parse_data("[.#.#.] (0,2,3,4) (1,3) (0,2) (1,4) {1,27,1,7,20}")[0]
+print(test_machine_4.minimum_joltage_presses(debug=False))
 
-# test_machine_5 = parse_data(
-#     "[.....#.#.] (3,4) (1,4) (0,2,3,5,6,8) (1,4,5,7) (0,3,4,6,7,8) (0,1,2,3,5,8) (2,4,5) (2,5) (2,3,5,8) (6) {24,29,22,43,58,28,19,16,24}"
-# )[0]
-# print(test_machine_5.minimum_joltage_presses(debug=False))
+test_machine_5 = parse_data(
+    "[.....#.#.] (3,4) (1,4) (0,2,3,5,6,8) (1,4,5,7) (0,3,4,6,7,8) (0,1,2,3,5,8) (2,4,5) (2,5) (2,3,5,8) (6) {24,29,22,43,58,28,19,16,24}"
+)[0]
+print(test_machine_5.minimum_joltage_presses(debug=False))
+
+test_machine_6 = parse_data(
+    "[##......#.] (1,3,5,6,7,8) (1,2,6,7) (0,6) (0,3,4,5,6,8) (4,9) (0,1,2,3,4,5,6,7,8) (0,3,4,6,8,9) (1,4,6,7) (0,4) (1,2,4,5,8) (1,2,5) {38,41,30,18,50,30,44,27,31,4}"
+)[0]
+print(test_machine_6.minimum_joltage_presses(debug=False))
+# reduced row echelon incorrect
 
 
-answer_2 = minimum_joltage_all_machines(input_data, debug=True)
-print(answer_2)
+# answer_2 = minimum_joltage_all_machines(input_data, debug=True)
+# print(answer_2)
 
 # 14,20,29,108,119,122,128
 # 24,102,123 incorrect.
