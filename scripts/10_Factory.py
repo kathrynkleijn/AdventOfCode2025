@@ -452,7 +452,7 @@ def minimum_joltage_all_machines(data, debug=False):
     presses = 0
     if debug:
         for num, machine in enumerate(machines):
-            if num > 176:
+            if num > 13:
                 print(f"\n\nChecking machine {num+1}")
                 min_presses = machine.minimum_joltage_presses()
                 if min_presses == 1e10:
@@ -501,9 +501,9 @@ test_machine_10 = parse_data(
 )[0]
 print(test_machine_10.minimum_joltage_presses())
 
-# answer_2 = minimum_joltage_all_machines(input_data, debug=True)
-# print(answer_2)
+answer_2 = minimum_joltage_all_machines(input_data, debug=True)
+print(answer_2)
 
 
-# slow: 14,123,144,157,177
-# incorrect: 72,79,92,136,146,173
+# slow: 14
+# incorrect: 92,173
