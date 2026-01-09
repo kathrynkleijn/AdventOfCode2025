@@ -206,6 +206,9 @@ class Machine:
                         if update:
                             break
             self.make_positive()
+        self.equations = [
+            equation for equation in self.equations if equation != [0] * len(equation)
+        ]
         self.make_positive()
         return self.sort_equations()
 
@@ -217,13 +220,19 @@ class Machine:
                     self.equations[num] = [int(val) * -1 for val in equation]
 
     def find_free_variables(self):
-        free = []
+        m = len(self.equations)
         n = len(self.equations[0])
+        num_free = (n - 1) - m
+        free = []
+        diagonals = []
+        for equation in self.equations:
+            diagonal = next(index for index, val in enumerate(equation) if val != 0)
+            diagonals.append(diagonal)
         for j in range(n - 1):
-            col = [x[j] for x in self.equations]
-            counter = Counter(col)
-            if sum([counter[val] for val in set(col) if val != 0]) > 1:
+            if j not in diagonals:
                 free.append(j)
+        if len(free) != num_free:
+            print("help!")
         return free
 
     def range_for_free(self, free):
@@ -475,7 +484,7 @@ print(test_machine_6.minimum_joltage_presses())
 test_machine_7 = parse_data(
     "[##....] (0,1,2,3,5) (0,1,2,4) (2,4) (1,3) (0,1,3) {26,42,18,40,7,11}"
 )[0]
-print(test_machine_7.minimum_joltage_presses())
+print(test_machine_7.minimum_joltage_presses(debug=True))
 
 test_machine_8 = parse_data(
     "[.#..#.#] (2,6) (2,3,5,6) (0,1,2,3,4,5) (0,1,6) (0,5) (0,3,4,5,6) (1,3,4) {48,51,46,56,47,41,56}"
@@ -490,7 +499,7 @@ print(test_machine_9.minimum_joltage_presses())
 test_machine_10 = parse_data(
     "[..###.#..] (0,2,5,7) (0,1,3,5,6) (4) (1,8) (0,1,4,6,7,8) (0,2,3,6) (0,1,2,6,7,8) (0,1,2,5,6,7) (1,5,7,8) {36,67,25,6,25,27,31,48,63}"
 )[0]
-print(test_machine_10.minimum_joltage_presses(debug=True))
+print(test_machine_10.minimum_joltage_presses())
 
 # answer_2 = minimum_joltage_all_machines(input_data, debug=True)
 # print(answer_2)
