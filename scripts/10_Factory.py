@@ -363,7 +363,7 @@ class Machine:
                         continue
                 if len(unknowns) == 1:
                     solution = (equation[-1] - sum(equation_solution)) / unknowns[0][1]
-                    if solution >= 0:
+                    if solution >= 0 and solution % 1 == 0:
                         variable = unknowns[0][0]
                         partial_solution[variable] = int(solution)
                         solved_variable = True
