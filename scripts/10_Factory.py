@@ -191,32 +191,39 @@ class Machine:
             equation for equation in self.equations if equation != [0] * len(equation)
         ]
         self.make_positive()
-        if self.echelon_check():
-            i, j, k = self.echelon_check()
-            multiplier = self.equations[i][k] / self.equations[j][k]
-            if multiplier % 1 != 0:
-                if abs(multiplier) < 0:
-                    multiplier = 1 / multiplier
-                    self.equations[i] = [
-                        y - multiplier * x
-                        for x, y in zip(self.equations[i], self.equations[j])
-                    ]
+        while self.echelon_check():
+            for copy in self.echelon_check():
+                i, j, k = copy
+                multiplier = self.equations[i][k] / self.equations[j][k]
+                if multiplier % 1 != 0:
+                    if abs(multiplier) < 0:
+                        multiplier = 1 / multiplier
+                        self.equations[i] = [
+                            y - multiplier * x
+                            for x, y in zip(self.equations[i], self.equations[j])
+                        ]
+                    else:
+                        hcf = math.gcd(
+                            int(self.equations[i][k]),
+                            int(self.equations[j][k]),
+                        )
+                        multi_x = self.equations[j][k] / hcf
+                        multi_y = self.equations[i][k] / hcf
+                        self.equations[i] = [
+                            multi_y * y - multi_x * x
+                            for x, y in zip(self.equations[i], self.equations[j])
+                        ]
                 else:
-                    hcf = math.gcd(
-                        int(self.equations[i][k]),
-                        int(self.equations[j][k]),
-                    )
-                    multi_x = self.equations[j][k] / hcf
-                    multi_y = self.equations[i][k] / hcf
                     self.equations[i] = [
-                        multi_y * y - multi_x * x
+                        multiplier * y - x
                         for x, y in zip(self.equations[i], self.equations[j])
                     ]
-            else:
-                self.equations[i] = [
-                    multiplier * y - x
-                    for x, y in zip(self.equations[i], self.equations[j])
-                ]
+            self.equations = [
+                equation
+                for equation in self.equations
+                if equation != [0] * len(equation)
+            ]
+            self.make_positive()
         self.make_positive()
         return self.sort_equations()
 
@@ -228,15 +235,15 @@ class Machine:
                     self.equations[num] = [int(val) * -1 for val in equation]
 
     def echelon_check(self):
-        n = len(self.equations[0])
         diagonals = {}
+        copies = []
         for num, equation in enumerate(self.equations):
             diagonal = next(index for index, val in enumerate(equation) if val != 0)
             if diagonal in diagonals.keys():
-                return num, diagonals[diagonal], diagonal
+                copies.append((num, diagonals[diagonal], diagonal))
             else:
                 diagonals[diagonal] = num
-        return False
+        return copies
 
     def find_free_variables(self):
         m = len(self.equations)
