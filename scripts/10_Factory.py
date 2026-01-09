@@ -101,23 +101,15 @@ class Machine:
     def row_echelon(self):
         m = len(self.equations)
         for j in range(1, m):
-            # not all([val == 0 for val in self.equations[j]]) and
             if not all([val == 0 for val in self.equations[j - 1]]):
-                # n = next(
-                #     index for index, val in enumerate(self.equations[j]) if val != 0
-                # )
                 p = next(
                     index for index, val in enumerate(self.equations[j - 1]) if val != 0
                 )
                 if p > j - 1:
                     self.make_positive()
                     self.sort_equations()
-                    # print("sorted")
             for i in range(j, m):
-                # print(f"{j=}")
                 if self.equations[i][j - 1] != 0 and self.equations[j - 1][j - 1] != 0:
-                    # print("\n")
-                    # print(self.equations[i], self.equations[j - 1])
                     multiplier = self.equations[i][j - 1] / self.equations[j - 1][j - 1]
                     if multiplier % 1 != 0:
                         if abs(multiplier) < 0:
@@ -146,16 +138,7 @@ class Machine:
                             y - multiplier * x
                             for x, y in zip(self.equations[j - 1], self.equations[i])
                         ]
-                    # if any([val % 1 != 0 for val in self.equations[i]]):
-
-                    #     self.equations[i] = [
-                    #         val / multiplier for val in self.equations[i]
-                    #     ]
-                    # print(f"{i=},{j=}")
-                    # print("\n".join(str(equation) for equation in self.equations))
         self.make_positive()
-        # print("\n")
-        # print("\n".join(str(equation) for equation in self.sort_equations()))
         return self.sort_equations()
 
     def reduced_row_echelon(self):
@@ -201,8 +184,6 @@ class Machine:
                                     self.equations[j - k - 1], self.equations[j]
                                 )
                             ]
-                        # print("\n")
-                        # print("\n".join(str(equation) for equation in self.equations))
                         if update:
                             break
             self.make_positive()
@@ -344,7 +325,7 @@ class Machine:
             if val[0] < 0:
                 ranges[key] = [0, val[1]]
         ranges = {key: val for key, val in ranges.items() if key in free}
-        return ranges, free
+        return dict(sorted(ranges.items())), free
 
     def find_solutions(self, free, ranges):
         total_presses = 1e10
@@ -497,7 +478,6 @@ def minimum_joltage_all_machines(data, debug=False):
                 if min_presses == 1e10:
                     print("No solution found")
                     incorrect.append(num + 1)
-                    # break
                 else:
                     print(f"{machine.indicator=},{min_presses=}")
         print(incorrect)
@@ -542,8 +522,10 @@ test_machine_10 = parse_data(
 )[0]
 print(test_machine_10.minimum_joltage_presses())
 
-answer_2 = minimum_joltage_all_machines(input_data, debug=True)
+test_machine_11 = parse_data(
+    "[#.###] (0) (0,1,2,4) (0,2) (1,2,4) (0,3) (0,1,3) (3,4) {200,188,30,185,17}"
+)[0]
+print(test_machine_11.minimum_joltage_presses())
+
+answer_2 = minimum_joltage_all_machines(input_data)
 print(answer_2)
-
-
-# incorrect: 92,173
