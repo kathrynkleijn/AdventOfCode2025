@@ -210,6 +210,33 @@ class Machine:
             equation for equation in self.equations if equation != [0] * len(equation)
         ]
         self.make_positive()
+        if self.echelon_check():
+            i, j, k = self.echelon_check()
+            multiplier = self.equations[i][k] / self.equations[j][k]
+            if multiplier % 1 != 0:
+                if abs(multiplier) < 0:
+                    multiplier = 1 / multiplier
+                    self.equations[i] = [
+                        y - multiplier * x
+                        for x, y in zip(self.equations[i], self.equations[j])
+                    ]
+                else:
+                    hcf = math.gcd(
+                        int(self.equations[i][k]),
+                        int(self.equations[j][k]),
+                    )
+                    multi_x = self.equations[j][k] / hcf
+                    multi_y = self.equations[i][k] / hcf
+                    self.equations[i] = [
+                        multi_y * y - multi_x * x
+                        for x, y in zip(self.equations[i], self.equations[j])
+                    ]
+            else:
+                self.equations[i] = [
+                    multiplier * y - x
+                    for x, y in zip(self.equations[i], self.equations[j])
+                ]
+        self.make_positive()
         return self.sort_equations()
 
     def make_positive(self):
@@ -218,6 +245,17 @@ class Machine:
             if any([val < 0 for val in equation]):
                 if next(val for val in equation if val) < 0:
                     self.equations[num] = [int(val) * -1 for val in equation]
+
+    def echelon_check(self):
+        n = len(self.equations[0])
+        diagonals = {}
+        for num, equation in enumerate(self.equations):
+            diagonal = next(index for index, val in enumerate(equation) if val != 0)
+            if diagonal in diagonals.keys():
+                return num, diagonals[diagonal], diagonal
+            else:
+                diagonals[diagonal] = num
+        return False
 
     def find_free_variables(self):
         m = len(self.equations)
@@ -451,15 +489,18 @@ def minimum_joltage_all_machines(data, debug=False):
     machines = parse_data(data)
     presses = 0
     if debug:
+        incorrect = []
         for num, machine in enumerate(machines):
-            if num > 13:
+            if num >= 0:
                 print(f"\n\nChecking machine {num+1}")
                 min_presses = machine.minimum_joltage_presses()
                 if min_presses == 1e10:
                     print("No solution found")
+                    incorrect.append(num + 1)
                     # break
                 else:
                     print(f"{machine.indicator=},{min_presses=}")
+        print(incorrect)
     else:
         for machine in machines:
             presses += machine.minimum_joltage_presses()
@@ -484,7 +525,7 @@ print(test_machine_6.minimum_joltage_presses())
 test_machine_7 = parse_data(
     "[##....] (0,1,2,3,5) (0,1,2,4) (2,4) (1,3) (0,1,3) {26,42,18,40,7,11}"
 )[0]
-print(test_machine_7.minimum_joltage_presses(debug=True))
+print(test_machine_7.minimum_joltage_presses())
 
 test_machine_8 = parse_data(
     "[.#..#.#] (2,6) (2,3,5,6) (0,1,2,3,4,5) (0,1,6) (0,5) (0,3,4,5,6) (1,3,4) {48,51,46,56,47,41,56}"
@@ -505,5 +546,4 @@ answer_2 = minimum_joltage_all_machines(input_data, debug=True)
 print(answer_2)
 
 
-# slow: 14
 # incorrect: 92,173
