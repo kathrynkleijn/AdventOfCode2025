@@ -134,13 +134,16 @@ def out_path_svr(
 test_devices2 = parse_data(test_data2)
 assert out_path_svr(test_devices2)[0] == 2
 
+cache = {}
 
-def x_to_y_path(
-    devices,
-    in_key,
-    out_key,
-    out=0,
-):
+
+def x_to_y_path(devices, in_key, out_key, out=0):
+
+    state = in_key
+    out_in = out
+    if state in cache:
+        cached_out = cache[state]
+        return out + cached_out
 
     starters = devices[in_key]
     for starter in starters:
@@ -150,17 +153,15 @@ def x_to_y_path(
         elif "out" in next_devices:
             continue
         else:
-            out = x_to_y_path(
-                devices,
-                in_key=starter,
-                out_key=out_key,
-                out=out,
-            )
+            out = x_to_y_path(devices, in_key=starter, out_key=out_key, out=out)
+
+    cache[state] = out - out_in
     return out
 
 
 # print(x_to_y_path(test_devices2, "dac", "fft"))
 # print(x_to_y_path(test_devices2, "fft", "dac"))
+# print(x_to_y_path(test_devices2, "dac", "out"))
 
 
 def svr_to_out_path(
@@ -171,15 +172,22 @@ def svr_to_out_path(
     svr_dac_paths = 0
     dac_out_paths = 0
 
+    cache.clear()
     dac_fft_paths = x_to_y_path(devices, "dac", "fft")
+    cache.clear()
     fft_dac_paths = x_to_y_path(devices, "fft", "dac")
+    cache.clear()
 
     if dac_fft_paths:
         svr_dac_paths = x_to_y_path(devices, "svr", "dac")
+        cache.clear()
         fft_out_paths = x_to_y_path(devices, "fft", "out")
+        cache.clear()
     if fft_dac_paths:
         svr_fft_paths = x_to_y_path(devices, "svr", "fft")
+        cache.clear()
         dac_out_paths = x_to_y_path(devices, "dac", "out")
+        cache.clear()
 
     return (
         svr_dac_paths * dac_fft_paths * fft_out_paths
@@ -188,6 +196,7 @@ def svr_to_out_path(
 
 
 assert svr_to_out_path(test_devices2) == 2
+
 
 answer_2 = svr_to_out_path(answer_devices)
 print(answer_2)
